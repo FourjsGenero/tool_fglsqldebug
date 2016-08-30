@@ -1,0 +1,141 @@
+ACTION DEFAULTS
+  ACTION open (TEXT="Open")
+  ACTION source (TEXT="Source")
+  ACTION details (TEXT="Details")
+  ACTION refresh (TEXT="Refresh", ACCELERATOR=CONTROL-R)
+  ACTION close (TEXT="Close")
+  ACTION about (TEXT="About")
+END
+
+TOPMENU
+GROUP file (TEXT="File")
+  COMMAND open
+  COMMAND close
+END
+GROUP file (TEXT="View")
+  COMMAND details
+  COMMAND source
+  COMMAND refresh
+END
+GROUP help (TEXT="Help")
+  COMMAND about
+END
+END
+
+LAYOUT (TEXT="FGLSQLDEBUG Viewer")
+GRID
+{
+FGLSQLDEBUG File: [fn                                                                      ]
+
+<TABLE t1                                                                                  >
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+[c1   |c2        |c3        |c4     |c5                |c6                                 ]
+<                                                                                          >
+[sql1                                                    ]<GROUP g1                        >
+[                                                        ] SQLSTATE:          [f1          ]
+[                                                        ] SQLERRD(2):        [f2          ]
+[sql2                                                    ] Source:[f3                |f4   ]
+[                                                        ] SQLERRMESSAGE:
+[                                                        ] [f5                             ]
+[sql3                                                    ] [                               ]
+[                                                        ] [                               ]
+[                                                        ]<                                >
+<GROUP g2                                                                                  >
+ <TABLE t2                                    ><TABLE t3                                  >
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+ [c11|c12              |c13                  ][c21|c22              |c23                  ]
+<                                                                                          >
+<GROUP g3                                                                                  >
+ Cursor: [cc                         ] Source: [cs                               ]
+ Exec time greater as: [et           ] frac:[etf         ]      [oe              ]
+ SQL Contains:[fk                                                                ]
+<                                                                                          >
+}
+END
+END
+
+ATTRIBUTES
+BUTTONEDIT fn = FORMONLY.filename, SCROLL, NOTEDITABLE, ACTION=open, IMAGE="file";
+EDIT c1 = FORMONLY.cmdid;
+PHANTOM FORMONLY.connid;
+EDIT c2 = FORMONLY.fglcmd, TITLE="Command", SCROLL;
+PHANTOM FORMONLY.srcfile;
+PHANTOM FORMONLY.srcline;
+EDIT c3 = FORMONLY.fglcursor, TITLE="Cursor", SCROLL;
+PHANTOM FORMONLY.sqlcursor;
+PHANTOM FORMONLY.c_scroll;
+PHANTOM FORMONLY.c_hold;
+EDIT c4 = FORMONLY.sqlcode, TITLE="sqlcode";
+PHANTOM FORMONLY.sqlerrd2;
+PHANTOM FORMONLY.sqlerrmsg;
+PHANTOM FORMONLY.sqlstate;
+EDIT c6 = FORMONLY.fglsq, TITLE="SQL", SCROLL;
+PHANTOM FORMONLY.natsql1;
+PHANTOM FORMONLY.natsql2;
+EDIT c5 = FORMONLY.exectime, TITLE="Time";
+
+GROUP g1: group1, TEXT="Command status";
+EDIT f1 = FORMONLY.f_sqlstate, COLOR=CYAN;
+EDIT f2 = FORMONLY.f_sqlerrd2, COLOR=YELLOW;
+EDIT f3 = FORMONLY.f_srcfile;
+EDIT f4 = FORMONLY.f_srcline;
+TEXTEDIT f5 = FORMONLY.f_sqlerrmsg, COLOR=RED, SCROLLBARS=BOTH;
+
+TEXTEDIT sql1 = FORMONLY.curr_sql1, STRETCH=BOTH,
+   COMMENT = "SQL statement in program";
+TEXTEDIT sql2 = FORMONLY.curr_sql2, STRETCH=BOTH,
+   COMMENT = "Database Native SQL statement";
+TEXTEDIT sql3 = FORMONLY.curr_sql3, STRETCH=BOTH,
+   COMMENT = "Database Native SQL statement (2)";
+--TABLE t1: table1;
+
+GROUP g2: group2, TEXT="USING & INTO variables";
+
+TABLE t2: table2, UNSORTABLECOLUMNS, UNMOVABLECOLUMNS, UNHIDABLECOLUMNS;
+PHANTOM FORMONLY.cid_i;
+PHANTOM FORMONLY.vtp_i;
+EDIT c11 = FORMONLY.pos_i, TITLE="Pos";
+EDIT c12 = FORMONLY.typ_i, TITLE="Type", SCROLL;
+PHANTOM FORMONLY.flg_i;
+EDIT c13 = FORMONLY.val_i, TITLE="Value", SCROLL;
+
+TABLE t3: table3, UNSORTABLECOLUMNS, UNMOVABLECOLUMNS, UNHIDABLECOLUMNS;
+PHANTOM FORMONLY.cid_u;
+PHANTOM FORMONLY.vtp_u;
+EDIT c21 = FORMONLY.pos_u, TITLE="Pos";
+EDIT c22 = FORMONLY.typ_u, TITLE="Type", SCROLL;
+PHANTOM FORMONLY.flg_u;
+EDIT c23 = FORMONLY.val_u, TITLE="Value", SCROLL;
+
+GROUP g3: group3, TEXT="Filter";
+COMBOBOX cc = FORMONLY.current_cursor;
+COMBOBOX cs = FORMONLY.current_source;
+TIMEEDIT et = FORMONLY.exec_time;
+SPINEDIT etf= FORMONLY.exec_time_frac, VALUEMIN=0, VALUEMAX=99999,
+              FORMAT="&&&&&";
+CHECKBOX oe = FORMONLY.only_errors, NOT NULL, TEXT="Only errors";
+EDIT fk = FORMONLY.find_keyword, SCROLL;
+
+END
+
+INSTRUCTIONS
+SCREEN RECORD sr(FORMONLY.cmdid THROUGH FORMONLY.exectime);
+SCREEN RECORD sruv(FORMONLY.cid_u THROUGH FORMONLY.val_u);
+SCREEN RECORD sriv(FORMONLY.cid_i THROUGH FORMONLY.val_i);
+END

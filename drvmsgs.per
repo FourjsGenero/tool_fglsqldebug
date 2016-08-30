@@ -1,0 +1,35 @@
+LAYOUT (TEXT="Driver messages")
+GRID
+{
+ <TABLE t1                                             >
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ [c1  |c2             |c3   |c4                        ]
+ <                                                     >
+[msg                                                    ]
+[                                                       ]
+[                                                       ]
+}
+END
+END
+
+ATTRIBUTES
+TABLE t1: table1, UNSORTABLECOLUMNS;
+PHANTOM FORMONLY.cmdid;
+EDIT c1 = FORMONLY.position, TITLE="Pos";
+EDIT c2 = FORMONLY.srcfile, TITLE="Source";
+EDIT c3 = FORMONLY.srcline, TITLE="Line";
+EDIT c4 = FORMONLY.message, TITLE="Debug message", SCROLL;
+TEXTEDIT msg = FORMONLY.msgtext;
+END
+
+INSTRUCTIONS
+SCREEN RECORD sr(FORMONLY.cmdid THROUGH FORMONLY.message);
+END
