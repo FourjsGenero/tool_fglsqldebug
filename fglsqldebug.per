@@ -22,14 +22,12 @@ GROUP help (TEXT="Help")
 END
 END
 
-LAYOUT (TEXT="FGLSQLDEBUG Viewer")
+LAYOUT (TEXT="FGLSQLDEBUG Viewer", STYLE="main2")
 GRID
 {
 FGLSQLDEBUG File: [fn                                                                      ]
 
 <TABLE t1                                                                                  >
-[c1   |c2        |c3        |c4     |c5                |c6                                 ]
-[c1   |c2        |c3        |c4     |c5                |c6                                 ]
 [c1   |c2        |c3        |c4     |c5                |c6                                 ]
 [c1   |c2        |c3        |c4     |c5                |c6                                 ]
 [c1   |c2        |c3        |c4     |c5                |c6                                 ]
@@ -56,15 +54,12 @@ FGLSQLDEBUG File: [fn                                                           
  [c11|c12              |c13                  ][c21|c22              |c23                  ]
  [c11|c12              |c13                  ][c21|c22              |c23                  ]
  [c11|c12              |c13                  ][c21|c22              |c23                  ]
- [c11|c12              |c13                  ][c21|c22              |c23                  ]
- [c11|c12              |c13                  ][c21|c22              |c23                  ]
- [c11|c12              |c13                  ][c21|c22              |c23                  ]
- [c11|c12              |c13                  ][c21|c22              |c23                  ]
 <                                                                                          >
 <GROUP g3                                                                                  >
  Cursor: [cc                         ] Source: [cs                               ]
- Exec time greater as: [et           ] frac:[etf         ]      [oe              ]
+ Exec time greater as:                         [et           ] frac:[etf         ]
  SQL Contains:[fk                                                                ]
+              [oe              ] [wu              ] [wi              ]
 <                                                                                          >
 }
 END
@@ -108,20 +103,20 @@ TEXTEDIT sql3 = FORMONLY.curr_sql3, STRETCH=BOTH,
 GROUP g2: group2, TEXT="USING & INTO variables";
 
 TABLE t2: table2, UNSORTABLECOLUMNS, UNMOVABLECOLUMNS, UNHIDABLECOLUMNS;
-PHANTOM FORMONLY.cid_i;
-PHANTOM FORMONLY.vtp_i;
-EDIT c11 = FORMONLY.pos_i, TITLE="Pos";
-EDIT c12 = FORMONLY.typ_i, TITLE="Type", SCROLL;
-PHANTOM FORMONLY.flg_i;
-EDIT c13 = FORMONLY.val_i, TITLE="Value", SCROLL;
-
-TABLE t3: table3, UNSORTABLECOLUMNS, UNMOVABLECOLUMNS, UNHIDABLECOLUMNS;
 PHANTOM FORMONLY.cid_u;
 PHANTOM FORMONLY.vtp_u;
-EDIT c21 = FORMONLY.pos_u, TITLE="Pos";
-EDIT c22 = FORMONLY.typ_u, TITLE="Type", SCROLL;
+EDIT c11 = FORMONLY.pos_u, TITLE="Pos";
+EDIT c12 = FORMONLY.typ_u, TITLE="Type", SCROLL;
 PHANTOM FORMONLY.flg_u;
-EDIT c23 = FORMONLY.val_u, TITLE="Value", SCROLL;
+EDIT c13 = FORMONLY.val_u, TITLE="Value", SCROLL;
+
+TABLE t3: table3, UNSORTABLECOLUMNS, UNMOVABLECOLUMNS, UNHIDABLECOLUMNS;
+PHANTOM FORMONLY.cid_i;
+PHANTOM FORMONLY.vtp_i;
+EDIT c21 = FORMONLY.pos_i, TITLE="Pos";
+EDIT c22 = FORMONLY.typ_i, TITLE="Type", SCROLL;
+PHANTOM FORMONLY.flg_i;
+EDIT c23 = FORMONLY.val_i, TITLE="Value", SCROLL;
 
 GROUP g3: group3, TEXT="Filter";
 COMBOBOX cc = FORMONLY.current_cursor;
@@ -130,6 +125,8 @@ TIMEEDIT et = FORMONLY.exec_time;
 SPINEDIT etf= FORMONLY.exec_time_frac, VALUEMIN=0, VALUEMAX=99999,
               FORMAT="&&&&&";
 CHECKBOX oe = FORMONLY.only_errors, NOT NULL, TEXT="Only errors";
+CHECKBOX wu = FORMONLY.with_uvars, NOT NULL, TEXT="With USING";
+CHECKBOX wi = FORMONLY.with_ivars, NOT NULL, TEXT="With INTO";
 EDIT fk = FORMONLY.find_keyword, SCROLL;
 
 END

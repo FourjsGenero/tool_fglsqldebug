@@ -76,6 +76,8 @@ TYPE t_params RECORD
          exec_time DATETIME HOUR TO SECOND,
          exec_time_frac INTEGER,
          only_errors BOOLEAN,
+         with_uvars BOOLEAN,
+         with_ivars BOOLEAN,
          find_keyword STRING
        END RECORD
 
@@ -128,6 +130,8 @@ FUNCTION do_monitor(filename, force_reload)
     LET params.exec_time = "00:00:00"
     LET params.exec_time_frac = 0
     LET params.only_errors = FALSE
+    LET params.with_uvars = FALSE
+    LET params.with_ivars = FALSE
     LET params.find_keyword = NULL
 
     IF filename IS NOT NULL THEN
@@ -159,25 +163,29 @@ FUNCTION do_monitor(filename, force_reload)
 
     INPUT BY NAME params.* ATTRIBUTES(WITHOUT DEFAULTS)
         ON CHANGE current_cursor
-           CALL reload_rows(DIALOG,params.*,arr_curr())
+           CALL reload_rows(DIALOG,params.*)
         ON CHANGE current_source
-           CALL reload_rows(DIALOG,params.*,arr_curr())
+           CALL reload_rows(DIALOG,params.*)
         ON CHANGE exec_time
-           CALL reload_rows(DIALOG,params.*,arr_curr())
+           CALL reload_rows(DIALOG,params.*)
         ON CHANGE exec_time_frac
-           CALL reload_rows(DIALOG,params.*,arr_curr())
+           CALL reload_rows(DIALOG,params.*)
         ON CHANGE only_errors
-           CALL reload_rows(DIALOG,params.*,arr_curr())
+           CALL reload_rows(DIALOG,params.*)
+        ON CHANGE with_uvars
+           CALL reload_rows(DIALOG,params.*)
+        ON CHANGE with_ivars
+           CALL reload_rows(DIALOG,params.*)
         ON CHANGE find_keyword
-           CALL reload_rows(DIALOG,params.*,arr_curr())
+           CALL reload_rows(DIALOG,params.*)
     END INPUT
 
     BEFORE DIALOG
         CALL DIALOG.setArrayAttributes("sr",log_att)
-        CALL reload_rows(DIALOG,params.*,arr_curr())
+        CALL reload_rows(DIALOG,params.*)
 
     ON ACTION refresh
-        CALL reload_rows(DIALOG,params.*,arr_curr())
+        CALL reload_rows(DIALOG,params.*)
 
     ON ACTION open
         LET filename = ask_file_name()
@@ -220,32 +228,31 @@ FUNCTION ask_file_name()
     RETURN fn
 END FUNCTION
 
-FUNCTION reload_rows(d,params,row)
+FUNCTION reload_rows(d,params)
     DEFINE d ui.Dialog,
-           params t_params,
-           row INTEGER
+           params t_params
     CALL load_array(d,params.*)
-    CALL sync_row_data(d,arr_curr())
+    CALL sync_row_data(d,1)
     CALL setup_dialog(d,params.*)
 END FUNCTION
 
-FUNCTION sync_row_data(d,x)
+FUNCTION sync_row_data(d,row)
     DEFINE d ui.Dialog,
-           x INTEGER
+           row INTEGER
     DEFINE tmp STRING,
            f ui.Form
     LET f = d.getForm()
-    IF x>=1 AND x<=log_arr.getLength() THEN
-       DISPLAY log_arr[x].fglsql TO curr_sql1
-       DISPLAY log_arr[x].natsql1 TO curr_sql2
-       DISPLAY log_arr[x].natsql2 TO curr_sql3
-       CALL f.setFieldHidden("curr_sql3", (log_arr[x].natsql2 IS NULL))
-       DISPLAY log_arr[x].sqlstate TO f_sqlstate
-       DISPLAY log_arr[x].sqlerrd2 TO f_sqlerrd2
-       DISPLAY log_arr[x].sqlerrmsg TO f_sqlerrmsg
-       DISPLAY log_arr[x].srcfile TO f_srcfile
-       DISPLAY log_arr[x].srcline TO f_srcline
-       MESSAGE SFMT("Row %1/%2", x, log_arr.getLength())
+    IF row>=1 AND row<=log_arr.getLength() THEN
+       DISPLAY log_arr[row].fglsql TO curr_sql1
+       DISPLAY log_arr[row].natsql1 TO curr_sql2
+       DISPLAY log_arr[row].natsql2 TO curr_sql3
+       CALL f.setFieldHidden("curr_sql3", (log_arr[row].natsql2 IS NULL))
+       DISPLAY log_arr[row].sqlstate TO f_sqlstate
+       DISPLAY log_arr[row].sqlerrd2 TO f_sqlerrd2
+       DISPLAY log_arr[row].sqlerrmsg TO f_sqlerrmsg
+       DISPLAY log_arr[row].srcfile TO f_srcfile
+       DISPLAY log_arr[row].srcline TO f_srcline
+       MESSAGE SFMT("Row %1/%2", row, log_arr.getLength())
     ELSE
        CLEAR curr_sql1, curr_sql2, curr_sql3,
              f_sqlstate, f_sqlerrd2, f_sqlerrmsg,
@@ -253,17 +260,17 @@ FUNCTION sync_row_data(d,x)
        MESSAGE NULL
        CALL f.setFieldHidden("curr_sql3", TRUE)
     END IF
-    CALL load_sqlvars(d,x)
+    CALL load_sqlvars(d,row)
 END FUNCTION
 
 FUNCTION setup_dialog(d,params)
     DEFINE d ui.Dialog,
            params t_params
-    DEFINE x INTEGER,
+    DEFINE row INTEGER,
            s, r BOOLEAN
-    LET x = d.getCurrentRow("sr")
-    IF x>0 THEN
-       LET s = (log_arr[x].srcfile IS NOT NULL)
+    LET row = d.getCurrentRow("sr")
+    IF row>0 THEN
+       LET s = (log_arr[row].srcfile IS NOT NULL)
        LET r = TRUE
     END IF
     CALL d.setActionActive("sr.source",s)
@@ -548,6 +555,12 @@ FUNCTION load_array(d,params)
     END IF
     IF params.only_errors THEN
        LET sql = sql || " AND sqlcode < 0"
+    END IF
+    IF params.with_uvars THEN
+       LET sql = sql || " AND cmdid IN (SELECT DISTINCT cmdid FROM sqlvar WHERE vartype='U')"
+    END IF
+    IF params.with_ivars THEN
+       LET sql = sql || " AND cmdid IN (SELECT DISTINCT cmdid FROM sqlvar WHERE vartype='I')"
     END IF
     IF params.find_keyword THEN
        LET sql = sql || SFMT(" AND fglsql LIKE '%%%1%%'", params.find_keyword)
