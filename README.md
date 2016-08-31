@@ -1,10 +1,30 @@
 # FGLSQLDEBUG log viewer
 
-## Compilation (Linux only):
+## Description
+
+This tool can read an FGLSQLDEBUG output, to show the log records in a graphical interface.
+You can then sort, search and filter log records, to find what you are looking for.
+
+Log records can be filtered on:
+* BDL cursor name
+* BDL source
+* Execution time
+* SQL errors
+* USING variable usage
+* INTO variable usage
+* SQL keyword
+
+## Prerequisites
+
+* Genero BDL 3.00+
+* Genero Desktop Client 3.00+
+* GNU Make
+
+## Compilation
 
 1. make clean all
 
-## Usage:
+## Usage
 
 1. Get an FGLSQLDEBUG log to analyze
 2. Run the tool with fglrun fglsqldebug [-f logfile [-r]]
