@@ -89,11 +89,21 @@ DEFINE ivars DYNAMIC ARRAY OF t_sqlvar
 DEFINE fglsourcepath STRING
 
 MAIN
+    CALL check_front_end()
     OPTIONS INPUT WRAP
     --DEFER INTERRUPT DEFER QUIT
     LET fglsourcepath = fgl_getenv("FGLSOURCEPATH")
     CALL process_arguments()
 END MAIN
+
+FUNCTION check_front_end()
+    DEFINE fen STRING
+    LET fen = ui.Interface.getFrontEndName()
+    IF fen!="GDC" AND fen!="GWC" AND fen!="GBC" THEN
+       DISPLAY "ERROR: This tool is designed for desktop front-ends (GDC, GWC, GBC)"
+       EXIT PROGRAM 1
+    END IF
+END FUNCTION
 
 FUNCTION process_arguments()
     DEFINE filename STRING,
