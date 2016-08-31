@@ -45,3 +45,6 @@ See [Genero BDL documentation](http://www.4js.com/download/documentation) for mo
 FGLSQLDEBUG and FGLSOURCEPATH environment variables.
 
 
+## Bug fixes:
+
+- 1.01: Multiple directories in FGLSOURCEPATH

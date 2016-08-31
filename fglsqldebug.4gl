@@ -1,7 +1,7 @@
 IMPORT os
 IMPORT util
 
-CONSTANT TOOL_VERSION = "1.00"
+CONSTANT TOOL_VERSION = "1.01"
 CONSTANT TOOL_ABOUT_MSG = "\nFGLSQLDEBUG Viewer Version %1\n\nFour Js Development Tools 2016\n\n"
 
 TYPE t_connection RECORD
@@ -311,6 +311,20 @@ FUNCTION show_driver_messages(cid)
 
 END FUNCTION
 
+FUNCTION find_source(srcfile)
+    DEFINE srcfile STRING
+    DEFINE path STRING,
+           tok base.StringTokenizer
+    LET tok = base.StringTokenizer.create(fglsourcepath,os.Path.pathSeparator())
+    WHILE tok.hasMoreTokens()
+        LET path = os.Path.join(tok.nextToken(),srcfile)
+        IF os.Path.exists(path) THEN
+           RETURN path
+        END IF
+    END WHILE
+    RETURN NULL
+END FUNCTION
+
 FUNCTION show_source(srcfile,srcline)
     DEFINE srcfile STRING, srcline INTEGER
     DEFINE arr DYNAMIC ARRAY OF RECORD
@@ -324,7 +338,11 @@ FUNCTION show_source(srcfile,srcline)
        CALL mbox_ok("Define FGLSOURCEPATH to find application sources")
        RETURN
     END IF
-    LET tmp = os.Path.join(fglsourcepath,srcfile)
+    LET tmp = find_source(srcfile)
+    IF tmp IS NULL THEN
+       CALL mbox_ok(SFMT("Could not find source %1, check FGLSOURCEPATH",srcfile))
+       RETURN
+    END IF
     LET ch = base.Channel.create()
     TRY
         CALL ch.openFile(tmp,"r")
