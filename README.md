@@ -20,9 +20,14 @@ Log records can be filtered on:
 * Genero Desktop Client 3.00+
 * GNU Make
 
-## Compilation
+## Compilation from command line
 
 1. make clean all
+
+## Compilation in Genero Studio
+
+1. Load the fglsqldebug.4pw project
+2. Build the project
 
 ## Usage
 
