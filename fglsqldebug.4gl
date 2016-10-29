@@ -1,7 +1,7 @@
 IMPORT os
 IMPORT util
 
-CONSTANT TOOL_VERSION = "1.01"
+CONSTANT TOOL_VERSION = "1.02"
 CONSTANT TOOL_ABOUT_MSG = "\nFGLSQLDEBUG Viewer Version %1\n\nFour Js Development Tools 2016\n\n"
 
 TYPE t_connection RECORD
@@ -196,6 +196,20 @@ FUNCTION do_monitor(filename, force_reload)
 
     ON ACTION refresh
         CALL reload_rows(DIALOG,params.*)
+
+    ON ACTION prev_ident
+        LET x = find_identical(arr_curr(),"B")
+        IF x > 0 THEN
+           CALL DIALOG.setCurrentRow("sr",x)
+        END IF
+    ON ACTION next_ident
+        LET x = find_identical(arr_curr(),"F")
+        IF x > 0 THEN
+           CALL DIALOG.setCurrentRow("sr",x)
+        END IF
+
+    ON ACTION stats_stmt
+        CALL show_statement_stats(arr_curr())
 
     ON ACTION open
         LET filename = ask_file_name()
@@ -1069,4 +1083,90 @@ FUNCTION cmdarg_option_check(stindex,optlist)
         IF NOT found THEN RETURN i END IF
     END FOR
     RETURN 0
+END FUNCTION
+
+FUNCTION statement_matches(x1,x2)
+    DEFINE x1,x2 INTEGER
+    RETURN (
+        NVL(log_arr[x1].fglcmd,   "NONE") == NVL(log_arr[x2].fglcmd,"NONE")
+    AND NVL(log_arr[x1].fglsql,   "NONE") == NVL(log_arr[x2].fglsql,"NONE")
+    AND NVL(log_arr[x1].fglcursor,"NONE") == NVL(log_arr[x2].fglcursor,"NONE")
+    )
+END FUNCTION
+
+FUNCTION find_identical(curr, dir)
+    DEFINE curr INTEGER,
+           dir CHAR(1)
+    DEFINE n, x, s, e, d INTEGER
+    IF dir=="F" THEN
+       LET s = curr + 1
+       LET e = log_arr.getLength()
+       LET d = +1
+    ELSE
+       LET s = curr - 1
+       LET e = 1
+       LET d = -1
+    END IF
+    FOR n=1 TO 2
+        FOR x=s TO e STEP d
+            IF statement_matches(curr, x) THEN
+               RETURN x
+            END IF
+        END FOR
+        IF dir=="F" THEN
+           LET s = 1
+        ELSE
+           LET s = log_arr.getLength()
+        END IF
+    END FOR
+    RETURN 0
+END FUNCTION
+
+FUNCTION show_statement_stats(curr)
+    DEFINE curr INTEGER
+    DEFINE occurences INTEGER,
+           sqlerrors INTEGER,
+           sqlnotfnd INTEGER,
+           time_avg INTERVAL HOUR(9) TO FRACTION(5),
+           time_min INTERVAL HOUR(9) TO FRACTION(5),
+           time_max INTERVAL HOUR(9) TO FRACTION(5),
+           time_tot INTERVAL HOUR(9) TO FRACTION(5),
+           x INTEGER
+    #-- Cannot use SQL because SQLite does not know about INTERVALs...
+    # SELECT COUNT(*), AVG(exectime), MIN(exectime), MAX(exectime)
+    #  INTO occurences, time_avg, time_min, time_max
+    #  FROM command
+    #  WHERE fglsql = log_arr[curr].fglsql
+    LET time_min = INTERVAL(9999999:00:00.000) HOUR(9) TO FRACTION
+    LET time_max = INTERVAL(     00:00:00.000) HOUR(9) TO FRACTION
+    LET time_tot = INTERVAL(     00:00:00.000) HOUR(9) TO FRACTION
+    FOR x=1 TO log_arr.getLength()
+        IF statement_matches(curr, x) THEN
+           LET occurences = occurences+1
+           IF log_arr[x].sqlcode < 0 THEN
+               LET sqlerrors = sqlerrors+1
+           END IF
+           IF log_arr[x].sqlcode == 100 THEN
+               LET sqlnotfnd = sqlnotfnd+1
+           END IF
+           LET time_tot = time_tot + log_arr[x].exectime
+           IF log_arr[x].exectime < time_min THEN
+              LET time_min = log_arr[x].exectime
+           END IF
+           IF log_arr[x].exectime > time_max THEN
+              LET time_max = log_arr[x].exectime
+           END IF
+        END IF
+    END FOR
+    LET time_avg = ( time_tot / occurences )
+    CALL mbox_ok("\tStatement statistics\n\n"
+                 ||SFMT("Occurrences :\t %1\n", occurences)
+                 ||SFMT("SQL errors  :\t %1\n", sqlerrors)
+                 ||SFMT("Not found   :\t %1\n", sqlnotfnd)
+                 ||     "Times       :\n"
+                 ||SFMT("\tAvg time    :\t %1\n", time_avg)
+                 ||SFMT("\tMin time    :\t %1\n", time_min)
+                 ||SFMT("\tMax time    :\t %1\n", time_max)
+                 ||SFMT("\tTot time    :\t %1\n", time_tot)
+                )
 END FUNCTION
