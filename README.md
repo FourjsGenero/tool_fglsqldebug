@@ -14,6 +14,8 @@ Log records can be filtered on:
 * INTO variable usage
 * SQL keyword
 
+![FGLSQLDEBUG viewer (GDC)](https://github.com/FourjsGenero/tool_fglsqldebug/raw/master/docs/fglsqldebug-screen-001.png)
+
 ## Prerequisites
 
 * Genero BDL 3.00+
