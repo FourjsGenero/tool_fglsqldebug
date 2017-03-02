@@ -776,6 +776,9 @@ FUNCTION load_file(filename, force_reload)
 
         IF conn.driver IS NULL THEN -- found connection statement
            CALL extract_tail(" | curr driver     : ", line) RETURNING found, tail
+           IF NOT found THEN
+              CALL extract_tail(" | sql driver      : ", line) RETURNING found, tail
+           END IF
            IF found THEN
               LET valid=TRUE
               LET p = tail.getIndexOf("ident='",1)
@@ -789,6 +792,9 @@ FUNCTION load_file(filename, force_reload)
 
         IF conn.name IS NULL THEN -- found connection statement
            CALL extract_tail(" | curr connection : ", line) RETURNING found, tail
+           IF NOT found THEN
+              CALL extract_tail(" | sql connection  : ", line) RETURNING found, tail
+           END IF
            IF found THEN
               LET p = tail.getIndexOf("ident='",1)
               IF p>0 THEN
