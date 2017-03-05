@@ -1,7 +1,7 @@
 IMPORT os
 IMPORT util
 
-CONSTANT TOOL_VERSION = "1.02"
+CONSTANT TOOL_VERSION = "1.03"
 CONSTANT TOOL_ABOUT_MSG = "\nFGLSQLDEBUG Viewer Version %1\n\nFour Js Development Tools 2016\n\n"
 
 TYPE t_connection RECORD
@@ -81,6 +81,16 @@ TYPE t_params RECORD
          find_keyword STRING
        END RECORD
 
+TYPE t_stmt_stats RECORD
+         occurences INTEGER,
+         sqlerrors INTEGER,
+         sqlnotfnd INTEGER,
+         time_avg INTERVAL HOUR(9) TO FRACTION(5),
+         time_min INTERVAL HOUR(9) TO FRACTION(5),
+         time_max INTERVAL HOUR(9) TO FRACTION(5),
+         time_tot INTERVAL HOUR(9) TO FRACTION(5)
+     END RECORD
+
 DEFINE log_arr DYNAMIC ARRAY OF t_command
 DEFINE log_att DYNAMIC ARRAY OF t_command_att
 DEFINE uvars DYNAMIC ARRAY OF t_sqlvar
@@ -130,7 +140,7 @@ FUNCTION do_monitor(filename, force_reload)
     DEFINE filename STRING,
            force_reload BOOLEAN
     DEFINE params t_params,
-           x INTEGER
+           x, cmdid INTEGER
 
     OPEN FORM f1 FROM "fglsqldebug"
     DISPLAY FORM f1
@@ -201,11 +211,23 @@ FUNCTION do_monitor(filename, force_reload)
         LET x = find_identical(arr_curr(),"B")
         IF x > 0 THEN
            CALL DIALOG.setCurrentRow("sr",x)
+           CALL sync_row_data(DIALOG,x)
         END IF
     ON ACTION next_ident
         LET x = find_identical(arr_curr(),"F")
         IF x > 0 THEN
            CALL DIALOG.setCurrentRow("sr",x)
+           CALL sync_row_data(DIALOG,x)
+        END IF
+
+    ON ACTION stats_glob
+        LET cmdid = show_global_stats()
+        IF cmdid>0 THEN
+           LET x = log_arr_lookup_cmdid(cmdid)
+           IF x>0 THEN
+              CALL DIALOG.setCurrentRow("sr",x)
+              CALL sync_row_data(DIALOG,x)
+           END IF
         END IF
 
     ON ACTION stats_stmt
@@ -545,11 +567,8 @@ END FUNCTION
 FUNCTION extract_tail(head,line)
     DEFINE head, line STRING
     DEFINE len SMALLINT, tail STRING
-    LET head = head || "*"
-    LET len = head.getLength()
-    IF line MATCHES head THEN
-       LET tail = line.subString(len,line.getLength())
-       RETURN TRUE, tail
+    IF line.getIndexOf(head, 1) == 1 THEN
+       RETURN TRUE, line.subString( head.getLength()+1, line.getLength() )
     END IF
     RETURN FALSE, NULL
 END FUNCTION
@@ -668,6 +687,7 @@ FUNCTION load_file(filename, force_reload)
            tmpfile STRING,
            valid BOOLEAN,
            line STRING,
+           rejected BOOLEAN,
            found BOOLEAN,
            tail STRING,
            cmd t_command,
@@ -676,7 +696,12 @@ FUNCTION load_file(filename, force_reload)
            conn t_connection,
            p, p2, s SMALLINT,
            tmp1, tmp2 STRING,
-           cursz, totsz, progress, totkb INTEGER
+           last_cmdid INTEGER,
+           def_fglsql CHAR(2000),
+           cursz INTEGER,
+           totsz INTEGER,
+           progress INTEGER,
+           totkb INTEGER
 
     CALL init_database(filename, force_reload) RETURNING s, tmpfile
     CASE s
@@ -708,10 +733,17 @@ FUNCTION load_file(filename, force_reload)
 
     BEGIN WORK
 
-    LET cmd.cmdid = 0
+    LET rejected = FALSE
+    LET last_cmdid = 0
+    INITIALIZE cmd.* TO NULL
+
     WHILE NOT ch.isEOF()
 
-        LET line = ch.readLine()
+        IF rejected THEN
+           LET rejected = FALSE
+        ELSE
+           LET line = ch.readLine()
+        END IF
         LET cursz = cursz + line.getLength()
         IF cursz MOD 2000 == 0 THEN
            LET progress = ((cursz/totsz)*100)
@@ -736,26 +768,44 @@ FUNCTION load_file(filename, force_reload)
            END IF
         END IF
 
-        CALL extract_tail(" | using: ", line) RETURNING found, tail
-        IF found THEN
-           LET sv.vartype = "U"
-           LET sv.position = 0
-           --LET sqlvar_count = tail
-           CONTINUE WHILE
+        IF sv.vartype IS NULL THEN
+           CALL extract_tail(" | using: ", line) RETURNING found, tail
+           --IF NOT found THEN
+           --   CALL extract_tail(" | using(tmp): ", line) RETURNING found, tail
+           --END IF
+           IF found THEN
+              LET sv.vartype = "U"
+                 LET sv.position = 0
+              --LET sqlvar_count = tail
+              CONTINUE WHILE
+           END IF
         END IF
 
-        CALL extract_tail(" | into: ", line) RETURNING found, tail
-        IF found THEN
-           LET sv.vartype = 'I'
-           LET sv.position = 0
-           --LET sqlvar_count = tail
-           CONTINUE WHILE
+        IF sv.vartype IS NULL THEN
+           CALL extract_tail(" | into: ", line) RETURNING found, tail
+           --IF NOT found THEN
+           --   CALL extract_tail(" | into(tmp): ", line) RETURNING found, tail
+           --END IF
+           IF found THEN
+              LET sv.vartype = 'I'
+              LET sv.position = 0
+              --LET sqlvar_count = tail
+              CONTINUE WHILE
+           END IF
         END IF
 
         CALL extract_tail("SQL: ", line) RETURNING found, tail
         IF found THEN
+           IF cmd.cmdid IS NOT NULL THEN
+              IF cmd.fglsql IS NULL THEN
+                 LET cmd.fglsql = def_fglsql
+              END IF
+              INSERT INTO command VALUES (cmd.*)
+           END IF
+           LET sv.vartype = NULL
+           INITIALIZE cmd.* TO NULL
            LET cmd.fglcmd = get_cmd_from_sql(tail)
-           LET cmd.fglsql = tail
+           LET def_fglsql = tail
            IF cmd.fglcmd == "CONNECT"
            OR cmd.fglcmd == "DATABASE"
            OR cmd.fglcmd == "CREATE DATABASE" THEN
@@ -768,17 +818,13 @@ FUNCTION load_file(filename, force_reload)
               LET cmd.connid = conn.connid
               INSERT INTO connection (connid) VALUES (conn.connid)
            END IF
-           LET cmd.cmdid = cmd.cmdid + 1
-           INSERT INTO command (cmdid, connid, fglcmd, fglsql) VALUES (cmd.cmdid, cmd.connid, cmd.fglcmd, cmd.fglsql)
+           LET cmd.cmdid = (last_cmdid:=last_cmdid+1)
            LET dm.position = 0
            CONTINUE WHILE
         END IF
 
-        IF conn.driver IS NULL THEN -- found connection statement
+        IF conn.driver IS NULL THEN
            CALL extract_tail(" | curr driver     : ", line) RETURNING found, tail
-           IF NOT found THEN
-              CALL extract_tail(" | sql driver      : ", line) RETURNING found, tail
-           END IF
            IF found THEN
               LET valid=TRUE
               LET p = tail.getIndexOf("ident='",1)
@@ -790,11 +836,8 @@ FUNCTION load_file(filename, force_reload)
            END IF
         END IF
 
-        IF conn.name IS NULL THEN -- found connection statement
+        IF conn.name IS NULL THEN
            CALL extract_tail(" | curr connection : ", line) RETURNING found, tail
-           IF NOT found THEN
-              CALL extract_tail(" | sql connection  : ", line) RETURNING found, tail
-           END IF
            IF found THEN
               LET p = tail.getIndexOf("ident='",1)
               IF p>0 THEN
@@ -812,7 +855,7 @@ FUNCTION load_file(filename, force_reload)
            END IF
         END IF
 
-        IF conn.dlib IS NULL THEN -- found connection statement
+        IF conn.dlib IS NULL THEN
            CALL extract_tail(" | loading driver  : ", line) RETURNING found, tail
            IF found THEN
               LET conn.dlib = tail.subString(2,tail.getLength()-1)
@@ -821,7 +864,7 @@ FUNCTION load_file(filename, force_reload)
            END IF
         END IF
 
-        IF conn.dtype IS NULL THEN -- found connection statement
+        IF conn.dtype IS NULL THEN
            CALL extract_tail(" | db driver type  : ", line) RETURNING found, tail
            IF found THEN
               LET conn.dtype = tail
@@ -830,94 +873,114 @@ FUNCTION load_file(filename, force_reload)
            END IF
         END IF
 
-        CALL extract_tail(" | 4gl source      : ", line) RETURNING found, tail
-        IF found THEN
-           LET p = tail.getIndexOf(" line=",1)
-           IF p>0 THEN
-              LET cmd.srcfile = tail.subString(1,p-1)
-              LET cmd.srcline = tail.subString(p+6,tail.getLength())
-              UPDATE command
-                 SET srcfile = cmd.srcfile,
-                     srcline = cmd.srcline
-               WHERE cmdid = cmd.cmdid
+        IF cmd.srcfile IS NULL THEN
+           CALL extract_tail(" | 4gl source      : ", line) RETURNING found, tail
+           IF found THEN
+              LET p = tail.getIndexOf(" line=",1)
+                 IF p>0 THEN
+                 LET cmd.srcfile = tail.subString(1,p-1)
+                 LET cmd.srcline = tail.subString(p+6,tail.getLength())
+              END IF
+              CONTINUE WHILE
            END IF
-           CONTINUE WHILE
         END IF
 
-        CALL extract_tail(" | sql cursor      : ", line) RETURNING found, tail
-        IF found THEN
-           LET p = tail.getIndexOf("ident='",1)
-           LET tmp1 = tail.subString(p+7,tail.getLength()-1)
-           LET p = tmp1.getIndexOf("'",1)
-           LET cmd.sqlcursor = tmp1.subString(1,p-1)
-           LET tmp1 = tmp1.subString(p+1,tmp1.getLength())
-           CALL extract_tail(" (fglname='", tmp1) RETURNING found, tail
-           LET p = tail.getIndexOf("'",1)
-           LET cmd.fglcursor = tail.subString(1,p-1)
-           UPDATE command
-              SET fglcursor = cmd.fglcursor,
-                  sqlcursor = cmd.sqlcursor
-            WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
+        IF cmd.sqlcode IS NULL THEN
+           CALL extract_tail(" | sqlcode         :", line) RETURNING found, tail
+           IF found THEN
+              LET cmd.sqlcode = tail
+              --
+              LET line = ch.readLine()
+              CALL extract_tail(" |   sqlstate      :", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.sqlstate = tail
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+              --
+              LET line = ch.readLine()
+              CALL extract_tail(" |   sqlerrd2      :", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.sqlerrd2 = tail
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+              --
+              LET line = ch.readLine()
+              CALL extract_tail(" |   sql message   :", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.sqlerrmsg = tail
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+              --
+              CONTINUE WHILE
+           END IF
         END IF
 
-        CALL extract_tail(" | sqlcode         :", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.sqlcode = tail
-           UPDATE command SET sqlcode = cmd.sqlcode WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
+        IF cmd.sqlcursor IS NULL THEN
+           CALL extract_tail(" | sql cursor      : ", line) RETURNING found, tail
+           IF found THEN
+              LET p = tail.getIndexOf("ident='",1)
+              LET tmp1 = tail.subString(p+7,tail.getLength()-1)
+              LET p = tmp1.getIndexOf("'",1)
+              LET cmd.sqlcursor = tmp1.subString(1,p-1)
+              LET tmp1 = tmp1.subString(p+1,tmp1.getLength())
+              CALL extract_tail(" (fglname='", tmp1) RETURNING found, tail
+              LET p = tail.getIndexOf("'",1)
+              LET cmd.fglcursor = tail.subString(1,p-1)
+              --
+              LET line = ch.readLine()
+              CALL extract_tail(" |   fgl stmt      : ", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.fglsql = tail
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+              --
+{ TODO
+              LET line = ch.readLine()
+              CALL extract_tail(" |   sql stmt      : ", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.drvsql = tail
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+}
+              --
+              LET line = ch.readLine()
+              CALL extract_tail(" |   scroll cursor :", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.c_scroll = IIF(tail=="0","N","Y")
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+              --
+              CALL extract_tail(" |   with hold     :", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.c_hold = IIF(tail=="0","N","Y")
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+              --
+              CONTINUE WHILE
+           END IF
         END IF
 
-        CALL extract_tail(" |   sqlerrd2      :", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.sqlerrd2 = tail
-           UPDATE command SET sqlerrd2 = cmd.sqlerrd2 WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
+        IF cmd.exectime IS NULL THEN
+           CALL extract_tail(" | Execution time  : ", line) RETURNING found, tail
+           IF found THEN
+              LET cmd.exectime = tail
+              CONTINUE WHILE
+           END IF
         END IF
-
-        CALL extract_tail(" |   sqlstate      :", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.sqlstate = tail
-           UPDATE command SET sqlstate = cmd.sqlstate WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
-        END IF
-
-        CALL extract_tail(" |   sql message   :", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.sqlerrmsg = tail
-           UPDATE command SET sqlerrmsg = cmd.sqlerrmsg WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
-        END IF
-
-        CALL extract_tail(" |   scroll cursor :", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.c_scroll = IIF(tail=="0","N","Y")
-           UPDATE command SET c_scroll = cmd.c_scroll WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
-        END IF
-
-        CALL extract_tail(" |   with hold     :", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.c_hold = IIF(tail=="0","N","Y")
-           UPDATE command SET c_hold = cmd.c_hold WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
-        END IF
-
-        CALL extract_tail(" | Execution time  : ", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.exectime = tail
-           UPDATE command SET exectime = cmd.exectime WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
-        END IF
-
-        CALL extract_tail(" |   fgl stmt      : ", line) RETURNING found, tail
-        IF found THEN
-           LET cmd.fglsql = tail
-           UPDATE command SET fglsql = cmd.fglsql WHERE cmdid = cmd.cmdid
-           CONTINUE WHILE
-        END IF
-
--- FIXME: CALL extract_tail(" |   sql stmt      : ", line) RETURNING found, tail
 
         -- Other = driver messages...
         CALL extract_tail(" | ", line) RETURNING found, tail
@@ -936,12 +999,10 @@ FUNCTION load_file(filename, force_reload)
                     LET dm.srcline = tmp1.subString(p+1,p2-1)
                     CALL extract_tail("Nat stmt1 = ", dm.message) RETURNING found, cmd.natsql1
                     IF found THEN
-                       UPDATE command SET natsql1 = cmd.natsql1 WHERE cmdid = cmd.cmdid
                        CONTINUE WHILE
                     END IF
                     CALL extract_tail("Nat stmt2 = ", dm.message) RETURNING found, cmd.natsql2
                     IF found THEN
-                       UPDATE command SET natsql2 = cmd.natsql2 WHERE cmdid = cmd.cmdid
                        CONTINUE WHILE
                     END IF
                     INSERT INTO drvmsg VALUES (dm.*)
@@ -1128,51 +1189,158 @@ FUNCTION find_identical(curr, dir)
     RETURN 0
 END FUNCTION
 
-FUNCTION show_statement_stats(curr)
+FUNCTION collect_statement_stats(curr)
     DEFINE curr INTEGER
-    DEFINE occurences INTEGER,
-           sqlerrors INTEGER,
-           sqlnotfnd INTEGER,
-           time_avg INTERVAL HOUR(9) TO FRACTION(5),
-           time_min INTERVAL HOUR(9) TO FRACTION(5),
-           time_max INTERVAL HOUR(9) TO FRACTION(5),
-           time_tot INTERVAL HOUR(9) TO FRACTION(5),
-           x INTEGER
+    DEFINE x INT, stat t_stmt_stats
     #-- Cannot use SQL because SQLite does not know about INTERVALs...
     # SELECT COUNT(*), AVG(exectime), MIN(exectime), MAX(exectime)
     #  INTO occurences, time_avg, time_min, time_max
     #  FROM command
     #  WHERE fglsql = log_arr[curr].fglsql
-    LET time_min = INTERVAL(9999999:00:00.000) HOUR(9) TO FRACTION
-    LET time_max = INTERVAL(     00:00:00.000) HOUR(9) TO FRACTION
-    LET time_tot = INTERVAL(     00:00:00.000) HOUR(9) TO FRACTION
+    LET stat.time_min = INTERVAL(9999999:00:00.000) HOUR(9) TO FRACTION
+    LET stat.time_max = INTERVAL(     00:00:00.000) HOUR(9) TO FRACTION
+    LET stat.time_tot = INTERVAL(     00:00:00.000) HOUR(9) TO FRACTION
     FOR x=1 TO log_arr.getLength()
         IF statement_matches(curr, x) THEN
-           LET occurences = occurences+1
+           LET stat.occurences = stat.occurences+1
            IF log_arr[x].sqlcode < 0 THEN
-               LET sqlerrors = sqlerrors+1
+               LET stat.sqlerrors = stat.sqlerrors+1
            END IF
            IF log_arr[x].sqlcode == 100 THEN
-               LET sqlnotfnd = sqlnotfnd+1
+               LET stat.sqlnotfnd = stat.sqlnotfnd+1
            END IF
-           LET time_tot = time_tot + log_arr[x].exectime
-           IF log_arr[x].exectime < time_min THEN
-              LET time_min = log_arr[x].exectime
+           LET stat.time_tot = stat.time_tot + log_arr[x].exectime
+           IF log_arr[x].exectime < stat.time_min THEN
+              LET stat.time_min = log_arr[x].exectime
            END IF
-           IF log_arr[x].exectime > time_max THEN
-              LET time_max = log_arr[x].exectime
+           IF log_arr[x].exectime > stat.time_max THEN
+              LET stat.time_max = log_arr[x].exectime
            END IF
         END IF
     END FOR
-    LET time_avg = ( time_tot / occurences )
+    LET stat.time_avg = ( stat.time_tot / stat.occurences )
+    RETURN stat.*
+END FUNCTION
+
+FUNCTION show_statement_stats(curr)
+    DEFINE curr INTEGER
+    DEFINE stat t_stmt_stats
+    CALL collect_statement_stats(curr) RETURNING stat.*
     CALL mbox_ok("\tStatement statistics\n\n"
-                 ||SFMT("Occurrences :\t %1\n", occurences)
-                 ||SFMT("SQL errors  :\t %1\n", sqlerrors)
-                 ||SFMT("Not found   :\t %1\n", sqlnotfnd)
+                 ||SFMT("Occurrences :\t %1\n", stat.occurences)
+                 ||SFMT("SQL errors  :\t %1\n", stat.sqlerrors)
+                 ||SFMT("Not found   :\t %1\n", stat.sqlnotfnd)
                  ||     "Times       :\n"
-                 ||SFMT("\tAvg time    :\t %1\n", time_avg)
-                 ||SFMT("\tMin time    :\t %1\n", time_min)
-                 ||SFMT("\tMax time    :\t %1\n", time_max)
-                 ||SFMT("\tTot time    :\t %1\n", time_tot)
+                 ||SFMT("\tAvg time    :\t %1\n", stat.time_avg)
+                 ||SFMT("\tMin time    :\t %1\n", stat.time_min)
+                 ||SFMT("\tMax time    :\t %1\n", stat.time_max)
+                 ||SFMT("\tTot time    :\t %1\n", stat.time_tot)
                 )
+END FUNCTION
+
+FUNCTION collect_global_stats()
+    DEFINE x, cid INTEGER
+    DEFINE stat t_stmt_stats,
+           l_fglcmd VARCHAR(30),
+           l_fglsql VARCHAR(2000),
+           l_fglcursor VARCHAR(50)
+
+    WHENEVER ERROR CONTINUE
+    DROP TABLE stmt_stats
+    WHENEVER ERROR STOP
+    CREATE TEMP TABLE stmt_stats (
+              firstcmdid INTEGER PRIMARY KEY,
+              fglcmd VARCHAR(30),
+              fglsql VARCHAR(2000),
+              fglcursor VARCHAR(50),
+              occurences INTEGER,
+              sqlerrors INTEGER,
+              sqlnotfnd INTEGER,
+              time_avg INTERVAL HOUR(9) TO FRACTION(5),
+              time_min INTERVAL HOUR(9) TO FRACTION(5),
+              time_max INTERVAL HOUR(9) TO FRACTION(5),
+              time_tot INTERVAL HOUR(9) TO FRACTION(5),
+              UNIQUE (fglcmd, fglsql, fglcursor)
+           )
+
+    FOR x=1 TO log_arr.getLength()
+        IF x MOD 200 == 0 THEN
+           MESSAGE SFMT("Collecting statistics: row %1 / %2", x, log_arr.getLength() )
+           CALL ui.Interface.refresh()
+        END IF
+        LET l_fglcmd    = NVL(log_arr[x].fglcmd,"NONE")
+        LET l_fglsql    = NVL(log_arr[x].fglsql,"NONE")
+        LET l_fglcursor = NVL(log_arr[x].fglcursor,"NONE")
+        SELECT firstcmdid INTO cid FROM stmt_stats
+         WHERE fglcmd    == l_fglcmd
+           AND fglsql    == l_fglsql
+           AND fglcursor == l_fglcursor
+        IF SQLCA.SQLCODE==100 THEN
+           CALL collect_statement_stats(x) RETURNING stat.*
+           INSERT INTO stmt_stats
+              VALUES ( log_arr[x].cmdid, l_fglcmd, l_fglsql, l_fglcursor, stat.* )
+        END IF 
+    END FOR
+    SELECT COUNT(*) INTO x FROM stmt_stats
+    MESSAGE SFMT("Statistic collected: %1 SQL statements analyzed.",x)
+END FUNCTION
+
+FUNCTION show_global_stats()
+    DEFINE arr DYNAMIC ARRAY OF RECORD
+                   firstcmdid INTEGER,
+                   fglcmd VARCHAR(30),
+                   fglsql VARCHAR(2000),
+                   fglcursor VARCHAR(50),
+                   occurences INTEGER,
+                   sqlerrors INTEGER,
+                   sqlnotfnd INTEGER,
+                   time_avg INTERVAL HOUR(9) TO FRACTION(5),
+                   time_min INTERVAL HOUR(9) TO FRACTION(5),
+                   time_max INTERVAL HOUR(9) TO FRACTION(5),
+                   time_tot INTERVAL HOUR(9) TO FRACTION(5)
+               END RECORD,
+           x, n, cmdid INTEGER,
+           tm INTERVAL HOUR(9) TO FRACTION(5)
+
+    CALL collect_global_stats()
+
+    LET tm = INTERVAL(0:00:00.00000) HOUR(9) TO FRACTION(5)
+    DECLARE c_ps CURSOR FOR SELECT * FROM stmt_stats ORDER BY firstcmdid
+    LET x=1
+    FOREACH c_ps INTO arr[x].*
+        IF tm < arr[x].time_avg THEN
+           LET tm = arr[x].time_tot
+           LET n = x
+        END IF
+        LET x=x+1
+    END FOREACH
+    CALL arr.deleteElement(arr.getLength())
+
+    OPEN WINDOW w_ps WITH FORM "stmtstats"
+
+    DISPLAY ARRAY arr TO sr.* ATTRIBUTES(UNBUFFERED,DOUBLECLICK=select)
+       BEFORE DISPLAY
+          IF n>0 THEN
+             CALL DIALOG.setCurrentRow("sr",n)
+          END IF
+       ON ACTION select
+          LET cmdid = arr[arr_curr()].firstcmdid
+          EXIT DISPLAY
+    END DISPLAY
+
+    CLOSE WINDOW w_ps
+
+    RETURN cmdid
+
+END FUNCTION
+
+FUNCTION log_arr_lookup_cmdid(cmdid)
+    DEFINE cmdid INTEGER
+    DEFINE x INTEGER
+    FOR x=1 TO log_arr.getLength()
+        IF log_arr[x].cmdid == cmdid THEN
+           RETURN x
+        END IF
+    END FOR
+    RETURN 0
 END FUNCTION

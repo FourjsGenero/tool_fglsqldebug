@@ -3,9 +3,10 @@ ACTION DEFAULTS
   ACTION source (TEXT="Source")
   ACTION details (TEXT="Details")
   ACTION refresh (TEXT="Refresh", ACCELERATOR=CONTROL-R)
-  ACTION stats_stmt (TEXT="Statement", ACCELERATOR=CONTROL-Y)
   ACTION prev_ident (TEXT="Same prev", ACCELERATOR=CONTROL-P)
   ACTION next_ident (TEXT="Same next", ACCELERATOR=CONTROL-N)
+  ACTION stats_glob (TEXT="Global Statistics", ACCELERATOR=CONTROL-W)
+  ACTION stats_stmt (TEXT="Statement Statistics", ACCELERATOR=CONTROL-Y)
   ACTION close (TEXT="Close")
   ACTION about (TEXT="About")
 END
@@ -20,10 +21,11 @@ GROUP file (TEXT="View")
   COMMAND source
   COMMAND refresh
 END
-GROUP stats (TEXT="Statistics")
-  COMMAND stats_stmt
+GROUP stats (TEXT="Profiling")
   COMMAND prev_ident
   COMMAND next_ident
+  COMMAND stats_glob
+  COMMAND stats_stmt
 END
 GROUP help (TEXT="Help")
   COMMAND about

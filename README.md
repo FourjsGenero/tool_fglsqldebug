@@ -34,10 +34,11 @@ Log records can be filtered on:
 ## Usage
 
 1. Get an FGLSQLDEBUG log to analyze
-2. Define FGLSOURCEPATH to the .4gl sources that generated the FGLSQLDEBUG log.
+2. Define FGLSOURCEPATH to the .4gl sources that generated the FGLSQLDEBUG log
 3. Run the tool with fglrun fglsqldebug [-f logfile [-r]]
 4. In the first field, you can load another log file
 5. Use the Filter panel on bottom of the form to filter log records
+6. Run profiling statistics for find time consuming SQL statements
 
 The log records are loaded into an SQLite database created automatically if it does not exist.
 One database file is created for each log.
@@ -55,3 +56,5 @@ FGLSQLDEBUG and FGLSOURCEPATH environment variables.
 ## Bug fixes:
 
 - 1.01: Multiple directories in FGLSOURCEPATH
+- 1.02: Bug fixes
+- 1.03: Global statistics

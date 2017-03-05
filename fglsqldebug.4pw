@@ -56,6 +56,7 @@
   <Group label="Group" language="Genero">
     <Application binaryName="Application" dependencies="" id="18736" label="Application">
       <File filePath="drvmsgs.per"/>
+      <File filePath="stmtstats.per"/>
       <File filePath="fglsqldebug.4gl"/>
       <File filePath="fglsqldebug.per"/>
       <File filePath="showtext.per"/>
