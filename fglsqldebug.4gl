@@ -436,6 +436,15 @@ FUNCTION get_user_name()
     RETURN username
 END FUNCTION
 
+FUNCTION escape_backslashes(str)
+    DEFINE str STRING
+    DEFINE buf base.StringBuffer
+    LET buf = base.StringBuffer.create()
+    CALL buf.append(str)
+    CALL buf.replace("\\","\\\\",0)
+    RETURN buf.toString()
+END FUNCTION
+
 FUNCTION init_database(filename, force_reload)
     DEFINE filename STRING,
            force_reload BOOLEAN
@@ -459,7 +468,7 @@ FUNCTION init_database(filename, force_reload)
     WHENEVER ERROR CONTINUE
     DISCONNECT ALL
     WHENEVER ERROR STOP
-    LET db = SFMT("tmpdb+driver='dbmsqt',source='%1'",tmpfile)
+    LET db = SFMT("tmpdb+driver='dbmsqt',source='%1'",escape_backslashes(tmpfile))
     CONNECT TO db
 
     IF reuse THEN RETURN 1, tmpfile END IF
