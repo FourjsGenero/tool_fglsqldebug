@@ -20,6 +20,7 @@ Log records can be filtered on:
 
 * Genero BDL 3.00+
 * Genero Desktop Client 3.00+
+* Genero Studio 3.10+
 * GNU Make
 
 ## Compilation from command line
