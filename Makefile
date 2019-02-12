@@ -3,6 +3,9 @@ MODULES=$(patsubst %.4gl,%.42m,$(wildcard *.4gl))
 
 all: $(MODULES) $(FORMS)
 
+run:: all
+	fglrun fglsqldebug
+
 %.42f: %.per
 	fglform -M $<
 
