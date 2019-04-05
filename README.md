@@ -19,6 +19,7 @@ Log records can be filtered on:
 ## Prerequisites
 
 * Genero BDL 3.00+
+* Genero Browser Client 1.00.52+
 * Genero Desktop Client 3.00+
 * Genero Studio 3.10+
 * GNU Make
