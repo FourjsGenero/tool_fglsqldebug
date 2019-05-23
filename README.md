@@ -60,3 +60,4 @@ FGLSQLDEBUG and FGLSOURCEPATH environment variables.
 - 1.01: Multiple directories in FGLSOURCEPATH
 - 1.02: Bug fixes
 - 1.03: Global statistics
+- 1.04: Avoid freezing program (with IFX) when trying SELECT to check DB availability
