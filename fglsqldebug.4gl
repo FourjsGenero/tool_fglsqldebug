@@ -73,6 +73,8 @@ TYPE t_params RECORD
          filename STRING,
          current_cursor STRING,
          current_source STRING,
+         cursor_scroll CHAR(1),
+         cursor_hold CHAR(1),
          exec_time DATETIME HOUR TO SECOND,
          exec_time_frac INTEGER,
          only_errors BOOLEAN,
@@ -183,6 +185,8 @@ FUNCTION do_monitor(filename, force_reload)
 
     INPUT BY NAME params.* ATTRIBUTES(WITHOUT DEFAULTS)
         ON CHANGE current_cursor
+           LET params.cursor_scroll = NULL
+           LET params.cursor_hold = NULL
            CALL reload_rows(DIALOG,params.*)
         ON CHANGE current_source
            CALL reload_rows(DIALOG,params.*)
@@ -197,6 +201,10 @@ FUNCTION do_monitor(filename, force_reload)
         ON CHANGE with_ivars
            CALL reload_rows(DIALOG,params.*)
         ON CHANGE find_keyword
+           CALL reload_rows(DIALOG,params.*)
+        ON CHANGE cursor_scroll
+           CALL reload_rows(DIALOG,params.*)
+        ON CHANGE cursor_hold
            CALL reload_rows(DIALOG,params.*)
     END INPUT
 
@@ -251,6 +259,8 @@ FUNCTION do_monitor(filename, force_reload)
            END IF
            LET params.current_cursor = NULL
            LET params.current_source = NULL
+           LET params.cursor_scroll = NULL
+           LET params.cursor_hold = NULL
            CALL fill_cursor_list(NULL)
            CALL fill_source_list(NULL)
         END IF
@@ -619,6 +629,12 @@ FUNCTION load_array(d,params)
     END IF
     IF params.current_source IS NOT NULL THEN
        LET sql = sql || SFMT(" AND srcfile = '%1'",params.current_source)
+    END IF
+    IF params.cursor_scroll IS NOT NULL THEN
+       LET sql = sql || SFMT(" AND c_scroll = '%1'",params.cursor_scroll)
+    END IF
+    IF params.cursor_hold IS NOT NULL THEN
+       LET sql = sql || SFMT(" AND c_hold = '%1'",params.cursor_hold)
     END IF
     IF params.exec_time != "00:00:00" OR params.exec_time_frac>0 THEN
        LET max_time = SFMT(" 0 %1.%2", params.exec_time, (params.exec_time_frac USING "&&&&&"))

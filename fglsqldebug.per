@@ -66,10 +66,10 @@ FGLSQLDEBUG File: [fn                                                           
  [c11|c12              |c13                  ][c21|c22              |c23                  ]
 <                                                                                          >
 <GROUP g3                                                                                  >
- Cursor: [cc                         ] Source: [cs                               ]
- Exec time greater as:                         [et           ] frac:[etf         ]
- SQL Contains:[fk                                                                ]
-              [oe              ] [wu              ] [wi              ]
+ Source: [cs                                                   ]   [oe          ]
+ Cursor: [cc                                ] Time >= [et      ] frac:[etf      ]
+         [wu              ][wi              ] [ct           ][ch           ]
+ SQL Contains:[fk                                                               ]
 <                                                                                          >
 }
 END
@@ -131,12 +131,16 @@ EDIT c23 = FORMONLY.val_i, TITLE="Value", SCROLL;
 GROUP g3: group3, TEXT="Filter";
 COMBOBOX cc = FORMONLY.current_cursor;
 COMBOBOX cs = FORMONLY.current_source;
-TIMEEDIT et = FORMONLY.exec_time;
+EDIT     et = FORMONLY.exec_time;
 SPINEDIT etf= FORMONLY.exec_time_frac, VALUEMIN=0, VALUEMAX=99999,
               FORMAT="&&&&&";
 CHECKBOX oe = FORMONLY.only_errors, NOT NULL, TEXT="Only errors";
 CHECKBOX wu = FORMONLY.with_uvars, NOT NULL, TEXT="With USING";
 CHECKBOX wi = FORMONLY.with_ivars, NOT NULL, TEXT="With INTO";
+CHECKBOX ct = FORMONLY.cursor_scroll, TEXT="Scroll cursor",
+              VALUECHECKED="Y", VALUEUNCHECKED="N";
+CHECKBOX ch = FORMONLY.cursor_hold, TEXT="Hold cursor",
+              VALUECHECKED="Y", VALUEUNCHECKED="N";
 EDIT fk = FORMONLY.find_keyword, SCROLL;
 
 END
