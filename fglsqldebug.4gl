@@ -723,7 +723,7 @@ FUNCTION load_file(filename, force_reload)
            p, p2, s SMALLINT,
            tmp1, tmp2 STRING,
            last_cmdid INTEGER,
-           def_fglsql CHAR(2000),
+           def_fglsql VARCHAR(2000),
            cursz INTEGER,
            totsz INTEGER,
            progress INTEGER,
@@ -1023,12 +1023,14 @@ FUNCTION load_file(filename, force_reload)
                  LET p2 = tmp1.getIndexOf("(",1)
                  IF p2>0 THEN
                     LET dm.srcline = tmp1.subString(p+1,p2-1)
-                    CALL extract_tail("Nat stmt1 = ", dm.message) RETURNING found, cmd.natsql1
+                    CALL extract_tail("Nat stmt1 = ", dm.message) RETURNING found, tmp2
                     IF found THEN
+                       LET cmd.natsql1 = tmp2
                        CONTINUE WHILE
                     END IF
-                    CALL extract_tail("Nat stmt2 = ", dm.message) RETURNING found, cmd.natsql2
+                    CALL extract_tail("Nat stmt2 = ", dm.message) RETURNING found, tmp2
                     IF found THEN
+                       LET cmd.natsql2 = tmp2
                        CONTINUE WHILE
                     END IF
                     INSERT INTO drvmsg VALUES (dm.*)
