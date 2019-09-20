@@ -1040,6 +1040,12 @@ FUNCTION load_file(filename, force_reload)
            CONTINUE WHILE
         END IF
 
+        -- Other = sub-lines of driver messages...
+        LET dm.cmdid = cmd.cmdid
+        LET dm.position = dm.position + 1
+        LET dm.message = line
+        INSERT INTO drvmsg VALUES (dm.*)
+
     END WHILE
 
     -- Last command ...
