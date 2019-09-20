@@ -1042,6 +1042,14 @@ FUNCTION load_file(filename, force_reload)
 
     END WHILE
 
+    -- Last command ...
+    IF cmd.cmdid IS NOT NULL THEN
+       IF cmd.fglsql IS NULL THEN
+          LET cmd.fglsql = def_fglsql
+       END IF
+       INSERT INTO command VALUES (cmd.*)
+    END IF
+
     COMMIT WORK
 
     IF NOT valid THEN
