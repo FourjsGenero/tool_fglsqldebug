@@ -1,7 +1,7 @@
 IMPORT os
 IMPORT util
 
-CONSTANT TOOL_VERSION = "1.04"
+CONSTANT TOOL_VERSION = "1.05"
 CONSTANT TOOL_ABOUT_MSG = "\nFGLSQLDEBUG Viewer Version %1\n\nFour Js Development Tools 2016\n\n"
 
 TYPE t_connection RECORD
