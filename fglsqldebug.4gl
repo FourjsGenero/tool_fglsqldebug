@@ -809,9 +809,9 @@ FUNCTION load_file(filename, force_reload)
 
         IF sv.vartype IS NULL THEN
            CALL extract_tail(" | into: ", line) RETURNING found, tail
-           --IF NOT found THEN
-           --   CALL extract_tail(" | into(tmp): ", line) RETURNING found, tail
-           --END IF
+           IF NOT found THEN
+              CALL extract_tail(" | into(tmp): ", line) RETURNING found, tail
+           END IF
            IF found THEN
               LET sv.vartype = 'I'
               LET sv.position = 0
