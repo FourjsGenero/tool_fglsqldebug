@@ -42,11 +42,13 @@ TYPE t_command RECORD
          c_hold CHAR(1),
          sqlcode INTEGER,
          sqlerrd2 INTEGER,
+         sqlerrd3 INTEGER,
          sqlerrmsg VARCHAR(200),
          sqlstate VARCHAR(10),
          fglsql VARCHAR(2000),
          natsql1 VARCHAR(2000),
          natsql2 VARCHAR(2000),
+         timestamp DATETIME YEAR TO FRACTION(5),
          exectime INTERVAL DAY TO FRACTION(5)
        END RECORD
 TYPE t_command_att RECORD
@@ -61,11 +63,13 @@ TYPE t_command_att RECORD
          c_hold STRING,
          sqlcode STRING,
          sqlerrd2 STRING,
+         sqlerrd3 STRING,
          sqlerrmsg STRING,
          sqlstate STRING,
          fglsql STRING,
          natsql1 STRING,
          natsql2 STRING,
+         timestamp STRING,
          exectime STRING
        END RECORD
 
@@ -80,7 +84,10 @@ TYPE t_params RECORD
          only_errors BOOLEAN,
          with_uvars BOOLEAN,
          with_ivars BOOLEAN,
-         find_keyword STRING
+         find_keyword STRING,
+         sql_code INTEGER,
+         sqlerrd_2 INTEGER,
+         sqlerrd_3 INTEGER
        END RECORD
 
 TYPE t_stmt_stats RECORD
@@ -155,6 +162,9 @@ FUNCTION do_monitor(filename, force_reload)
     LET params.with_uvars = FALSE
     LET params.with_ivars = FALSE
     LET params.find_keyword = NULL
+    LET params.sql_code = NULL
+    LET params.sqlerrd_2 = NULL
+    LET params.sqlerrd_3 = NULL
 
     IF filename IS NOT NULL THEN
        IF NOT load_file(filename, force_reload) THEN
@@ -205,6 +215,12 @@ FUNCTION do_monitor(filename, force_reload)
         ON CHANGE cursor_scroll
            CALL reload_rows(DIALOG,params.*)
         ON CHANGE cursor_hold
+           CALL reload_rows(DIALOG,params.*)
+        ON CHANGE sql_code
+           CALL reload_rows(DIALOG,params.*)
+        ON CHANGE sqlerrd_2
+           CALL reload_rows(DIALOG,params.*)
+        ON CHANGE sqlerrd_3
            CALL reload_rows(DIALOG,params.*)
     END INPUT
 
@@ -303,17 +319,20 @@ FUNCTION sync_row_data(d,row)
        DISPLAY log_arr[row].natsql1 TO curr_sql2
        DISPLAY log_arr[row].natsql2 TO curr_sql3
        CALL f.setFieldHidden("curr_sql3", (log_arr[row].natsql2 IS NULL))
+       DISPLAY log_arr[row].timestamp TO f_timestamp
+       DISPLAY log_arr[row].sqlcode TO f_sqlcode
        DISPLAY log_arr[row].sqlstate TO f_sqlstate
        DISPLAY log_arr[row].sqlerrd2 TO f_sqlerrd2
+       DISPLAY log_arr[row].sqlerrd3 TO f_sqlerrd3
        DISPLAY log_arr[row].sqlerrmsg TO f_sqlerrmsg
        DISPLAY log_arr[row].srcfile TO f_srcfile
        DISPLAY log_arr[row].srcline TO f_srcline
-       MESSAGE SFMT("Row %1/%2", row, log_arr.getLength())
+       --MESSAGE SFMT("Row %1/%2", row, log_arr.getLength())
     ELSE
        CLEAR curr_sql1, curr_sql2, curr_sql3,
-             f_sqlstate, f_sqlerrd2, f_sqlerrmsg,
+             f_sqlstate, f_sqlerrd2, f_sqlerrd3, f_sqlerrmsg,
              f_srcfile, f_srcline
-       MESSAGE NULL
+       --MESSAGE NULL
        CALL f.setFieldHidden("curr_sql3", TRUE)
     END IF
     CALL load_sqlvars(d,row)
@@ -523,11 +542,13 @@ FUNCTION init_database(filename, force_reload)
          c_hold CHAR(1),
          sqlcode INTEGER,
          sqlerrd2 INTEGER,
+         sqlerrd3 INTEGER,
          sqlerrmsg VARCHAR(200),
          sqlstate VARCHAR(10),
          fglsql VARCHAR(2000),
          natsql1 VARCHAR(2000),
          natsql2 VARCHAR(2000),
+         timestamp DATETIME YEAR TO FRACTION(5),
          exectime INTERVAL DAY TO FRACTION(5)
     )
 
@@ -615,7 +636,7 @@ FUNCTION load_array(d,params)
     DEFINE d ui.Dialog,
            params t_params
     DEFINE x INTEGER,
-           sql STRING,
+           sql, msg STRING,
            max_time INTERVAL DAY TO FRACTION(5)
 
     CALL log_arr.clear()
@@ -643,6 +664,9 @@ FUNCTION load_array(d,params)
     IF params.only_errors THEN
        LET sql = sql || " AND sqlcode < 0"
     END IF
+    IF params.sql_code THEN
+       LET sql = sql || SFMT(" AND sqlcode = %1", params.sql_code)
+    END IF
     IF params.with_uvars THEN
        LET sql = sql || " AND cmdid IN (SELECT DISTINCT cmdid FROM sqlvar WHERE vartype='U')"
     END IF
@@ -652,12 +676,19 @@ FUNCTION load_array(d,params)
     IF params.find_keyword THEN
        LET sql = sql || SFMT(" AND fglsql LIKE '%%%1%%'", params.find_keyword)
     END IF
+    IF params.sqlerrd_2 THEN
+       LET sql = sql || SFMT(" AND sqlerrd2 = %1", params.sqlerrd_2)
+    END IF
+    IF params.sqlerrd_3 THEN
+       LET sql = sql || SFMT(" AND sqlerrd3 = %1", params.sqlerrd_3)
+    END IF
     LET sql = sql || " ORDER BY cmdid"
 
     DECLARE c1 CURSOR FROM sql
     LET x=1
     FOREACH c1 INTO log_arr[x].*
        LET log_att[x].cmdid = "#CCCCCC reverse"
+       LET log_att[x].timestamp = "#BBEEFF reverse"
        LET log_att[x].exectime = "#BBEEFF reverse"
        LET log_att[x].fglcmd = "#EEFFBB reverse"
        IF log_arr[x].sqlcode < 0 THEN
@@ -670,7 +701,17 @@ FUNCTION load_array(d,params)
     END FOREACH
     CALL log_arr.deleteElement(x)
 
-    CALL d.setCurrentRow("sr",1)
+    IF log_arr.getLength() > 0 THEN
+       CALL d.setCurrentRow("sr",1)
+    ELSE
+       CALL d.setCurrentRow("sr",0)
+       IF sql.getIndexOf(" AND ",1) > 0 THEN
+          LET msg = "No matching rows found in log with this filter!"
+       ELSE
+          LET msg = "Log is empty?"
+       END IF
+       CALL mbox_ok(msg)
+    END IF
 
 END FUNCTION
 
@@ -921,8 +962,13 @@ FUNCTION load_file(filename, force_reload)
               IF found THEN
                  LET cmd.sqlstate = tail
               ELSE
-                 LET rejected = TRUE
-                 CONTINUE WHILE
+                 CALL extract_tail(" |   sqlerrd3      :", line) RETURNING found, tail
+                 IF found THEN
+                    LET cmd.sqlerrd3 = tail
+                 ELSE
+                    LET rejected = TRUE
+                    CONTINUE WHILE
+                 END IF
               END IF
               --
               LET line = ch.readLine()
@@ -996,6 +1042,14 @@ FUNCTION load_file(filename, force_reload)
                  CONTINUE WHILE
               END IF
               --
+              CONTINUE WHILE
+           END IF
+        END IF
+
+        IF cmd.timestamp IS NULL THEN
+           CALL extract_tail(" | Timestamp       : ", line) RETURNING found, tail
+           IF found THEN
+              LET cmd.timestamp = tail
               CONTINUE WHILE
            END IF
         END IF

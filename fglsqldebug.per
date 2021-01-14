@@ -38,28 +38,24 @@ GRID
 FGLSQLDEBUG File: [fn                                                                      ]
 
 <TABLE t1                                                                                  >
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
-[c1     |c2        |c3        |c4     |c5                |c6                               ]
+[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
+[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
+[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
+[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
+[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
+[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
 <                                                                                          >
-[sql1                                                    ]<GROUP g1                        >
-[                                                        ] SQLSTATE:          [f1          ]
-[                                                        ] SQLERRD(2):        [f2          ]
-[sql2                                                    ] Source:[f3                |f4   ]
-[                                                        ] SQLERRMESSAGE:
-[                                                        ] [f5                             ]
-[sql3                                                    ] [                               ]
-[                                                        ] [                               ]
-[                                                        ]<                                >
+<GROUP g1                                                                                  >
+[sql1                                                 ] Timestamp: [ts                     ]
+[                                                     ] SQLCA.SQLCODE            [f0       ]
+[                                                     ] SQLSTATE                 [f1       ]
+[sql2                        |sql3                    ] SQLCA.SQLERRD(2)         [f2       ]
+[                            |                        ] SQLCA.SQLERRD(3)         [f3       ]
+[                            |                        ] Source:[f41          ]Line:[f42    ]
+ SQLERRMESSAGE:[f5                                                                         ]
+<                                                                                          >
 <GROUP g2                                                                                  >
  <TABLE t2                                    ><TABLE t3                                  >
- [c11|c12              |c13                  ][c21|c22              |c23                  ]
- [c11|c12              |c13                  ][c21|c22              |c23                  ]
  [c11|c12              |c13                  ][c21|c22              |c23                  ]
  [c11|c12              |c13                  ][c21|c22              |c23                  ]
  [c11|c12              |c13                  ][c21|c22              |c23                  ]
@@ -69,7 +65,8 @@ FGLSQLDEBUG File: [fn                                                           
  Source: [cs                                                   ]   [oe          ]
  Cursor: [cc                                ] Time >= [et      ] frac:[etf      ]
          [wu              ][wi              ] [ct           ][ch           ]
- SQL Contains:[fk                                                               ]
+ SQL Contains: [fk                                                              ]
+ SQLCA.SQLCODE=[sc      ] SQLCA.SQLERRD(2)=[s2      ] SQLCA.SQLERRD(3)=[s3      ]
 <                                                                                          >
 }
 END
@@ -88,25 +85,30 @@ PHANTOM FORMONLY.c_scroll;
 PHANTOM FORMONLY.c_hold;
 EDIT c4 = FORMONLY.sqlcode, TITLE="sqlcode";
 PHANTOM FORMONLY.sqlerrd2;
+PHANTOM FORMONLY.sqlerrd3;
 PHANTOM FORMONLY.sqlerrmsg;
 PHANTOM FORMONLY.sqlstate;
 EDIT c6 = FORMONLY.fglsq, TITLE="SQL", SCROLL;
 PHANTOM FORMONLY.natsql1;
 PHANTOM FORMONLY.natsql2;
+EDIT c7 = FORMONLY.timestamp, TITLE="When";
 EDIT c5 = FORMONLY.exectime, TITLE="Time";
 
-GROUP g1: group1, TEXT="Command status";
+GROUP g1: group1, TEXT="SQL Command";
+EDIT ts = FORMONLY.f_timestamp, COLOR=BLUE;
+EDIT f0 = FORMONLY.f_sqlcode, COLOR=RED WHERE f0 < 0;
 EDIT f1 = FORMONLY.f_sqlstate, COLOR=CYAN;
 EDIT f2 = FORMONLY.f_sqlerrd2, COLOR=YELLOW;
-EDIT f3 = FORMONLY.f_srcfile;
-EDIT f4 = FORMONLY.f_srcline;
-TEXTEDIT f5 = FORMONLY.f_sqlerrmsg, COLOR=RED, SCROLLBARS=BOTH;
+EDIT f3 = FORMONLY.f_sqlerrd3, COLOR=BLUE;
+EDIT f41 = FORMONLY.f_srcfile;
+EDIT f42 = FORMONLY.f_srcline;
+EDIT f5 = FORMONLY.f_sqlerrmsg, COLOR=RED, SCROLL;
 
-TEXTEDIT sql1 = FORMONLY.curr_sql1, STRETCH=BOTH,
+TEXTEDIT sql1 = FORMONLY.curr_sql1, STRETCH=X,
    COMMENT = "SQL statement in program";
-TEXTEDIT sql2 = FORMONLY.curr_sql2, STRETCH=BOTH,
+TEXTEDIT sql2 = FORMONLY.curr_sql2, STRETCH=X,
    COMMENT = "Database Native SQL statement";
-TEXTEDIT sql3 = FORMONLY.curr_sql3, STRETCH=BOTH,
+TEXTEDIT sql3 = FORMONLY.curr_sql3, STRETCH=X,
    COMMENT = "Database Native SQL statement (2)";
 --TABLE t1: table1;
 
@@ -142,6 +144,9 @@ CHECKBOX ct = FORMONLY.cursor_scroll, TEXT="Scroll cursor",
 CHECKBOX ch = FORMONLY.cursor_hold, TEXT="Hold cursor",
               VALUECHECKED="Y", VALUEUNCHECKED="N";
 EDIT fk = FORMONLY.find_keyword, SCROLL;
+EDIT sc = FORMONLY.sql_code;
+EDIT s2 = FORMONLY.sqlerrd_2;
+EDIT s3 = FORMONLY.sqlerrd_3;
 
 END
 
