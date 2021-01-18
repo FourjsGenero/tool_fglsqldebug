@@ -5,15 +5,6 @@
 This tool can read an FGLSQLDEBUG output, to show the log records in a graphical interface.
 You can then sort, search and filter log records, to find what you are looking for.
 
-Log records can be filtered on:
-* BDL cursor name
-* BDL source
-* Execution time
-* SQL errors
-* USING variable usage
-* INTO variable usage
-* SQL keyword
-
 ![FGLSQLDEBUG viewer (GDC)](https://github.com/FourjsGenero/tool_fglsqldebug/raw/master/docs/fglsqldebug-screen-001.png)
 
 ## Prerequisites
