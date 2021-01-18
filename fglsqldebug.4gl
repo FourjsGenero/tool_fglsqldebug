@@ -43,6 +43,7 @@ TYPE t_command RECORD
          sqlcode INTEGER,
          sqlerrd2 INTEGER,
          sqlerrd3 INTEGER,
+         sqlerrm VARCHAR(71),
          sqlerrmsg VARCHAR(200),
          sqlstate VARCHAR(10),
          fglsql VARCHAR(2000),
@@ -64,6 +65,7 @@ TYPE t_command_att RECORD
          sqlcode STRING,
          sqlerrd2 STRING,
          sqlerrd3 STRING,
+         sqlerrm STRING,
          sqlerrmsg STRING,
          sqlstate STRING,
          fglsql STRING,
@@ -109,7 +111,7 @@ DEFINE fglsourcepath STRING
 
 MAIN
     CALL check_front_end()
-    OPTIONS INPUT WRAP
+    OPTIONS INPUT WRAP, FIELD ORDER FORM
     --DEFER INTERRUPT DEFER QUIT
     LET fglsourcepath = fgl_getenv("FGLSOURCEPATH")
     CALL process_arguments()
@@ -324,13 +326,14 @@ FUNCTION sync_row_data(d,row)
        DISPLAY log_arr[row].sqlstate TO f_sqlstate
        DISPLAY log_arr[row].sqlerrd2 TO f_sqlerrd2
        DISPLAY log_arr[row].sqlerrd3 TO f_sqlerrd3
+       DISPLAY log_arr[row].sqlerrm TO f_sqlerrm
        DISPLAY log_arr[row].sqlerrmsg TO f_sqlerrmsg
        DISPLAY log_arr[row].srcfile TO f_srcfile
        DISPLAY log_arr[row].srcline TO f_srcline
        --MESSAGE SFMT("Row %1/%2", row, log_arr.getLength())
     ELSE
        CLEAR curr_sql1, curr_sql2, curr_sql3,
-             f_sqlstate, f_sqlerrd2, f_sqlerrd3, f_sqlerrmsg,
+             f_sqlstate, f_sqlerrd2, f_sqlerrd3, f_sqlerrm, f_sqlerrmsg,
              f_srcfile, f_srcline
        --MESSAGE NULL
        CALL f.setFieldHidden("curr_sql3", TRUE)
@@ -543,6 +546,7 @@ FUNCTION init_database(filename, force_reload)
          sqlcode INTEGER,
          sqlerrd2 INTEGER,
          sqlerrd3 INTEGER,
+         sqlerrm VARCHAR(71),
          sqlerrmsg VARCHAR(200),
          sqlstate VARCHAR(10),
          fglsql VARCHAR(2000),
@@ -680,7 +684,7 @@ FUNCTION load_array(d,params)
        LET sql = sql || SFMT(" AND sqlerrd2 = %1", params.sqlerrd_2)
     END IF
     IF params.sqlerrd_3 THEN
-       LET sql = sql || SFMT(" AND sqlerrd3 = %1", params.sqlerrd_3)
+       LET sql = sql || SFMT(" AND sqlerrd3 >= %1", params.sqlerrd_3)
     END IF
     LET sql = sql || " ORDER BY cmdid"
 
@@ -962,13 +966,8 @@ FUNCTION load_file(filename, force_reload)
               IF found THEN
                  LET cmd.sqlstate = tail
               ELSE
-                 CALL extract_tail(" |   sqlerrd3      :", line) RETURNING found, tail
-                 IF found THEN
-                    LET cmd.sqlerrd3 = tail
-                 ELSE
-                    LET rejected = TRUE
-                    CONTINUE WHILE
-                 END IF
+                 LET rejected = TRUE
+                 CONTINUE WHILE
               END IF
               --
               LET line = ch.readLine()
@@ -989,6 +988,23 @@ FUNCTION load_file(filename, force_reload)
                  CONTINUE WHILE
               END IF
               --
+              LET line = ch.readLine()
+              CALL extract_tail(" |   sql msg param :", line) RETURNING found, tail
+              IF found THEN
+                 LET cmd.sqlerrm = tail
+              ELSE
+                 LET rejected = TRUE
+                 CONTINUE WHILE
+              END IF
+              --
+              CONTINUE WHILE
+           END IF
+        END IF
+
+        IF cmd.sqlerrd3 IS NULL THEN
+           CALL extract_tail(" |   sqlerrd3      :", line) RETURNING found, tail
+           IF found THEN
+              LET cmd.sqlerrd3 = tail
               CONTINUE WHILE
            END IF
         END IF
@@ -1111,6 +1127,8 @@ FUNCTION load_file(filename, force_reload)
     END IF
 
     COMMIT WORK
+
+    MESSAGE ""
 
     IF NOT valid THEN
        CALL mbox_ok(SFMT("The file %1 does not seem to be a valid FGLSQLDEBUG file",filename))
