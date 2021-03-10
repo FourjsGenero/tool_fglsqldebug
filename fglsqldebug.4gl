@@ -50,7 +50,7 @@ TYPE t_command RECORD
          natsql1 VARCHAR(2000),
          natsql2 VARCHAR(2000),
          timestamp DATETIME YEAR TO FRACTION(5),
-         exectime INTERVAL DAY TO FRACTION(5)
+         exectime INTERVAL SECOND(9) TO FRACTION(5)
        END RECORD
 TYPE t_command_att RECORD
          cmdid STRING,
@@ -81,7 +81,7 @@ TYPE t_params RECORD
          current_source STRING,
          cursor_scroll CHAR(1),
          cursor_hold CHAR(1),
-         exec_time DATETIME HOUR TO SECOND,
+         exec_time INTEGER,
          exec_time_frac INTEGER,
          only_errors BOOLEAN,
          with_uvars BOOLEAN,
@@ -158,7 +158,7 @@ FUNCTION do_monitor(filename, force_reload)
     CALL ui.Interface.refresh()
 
     LET params.filename = filename
-    LET params.exec_time = "00:00:00"
+    LET params.exec_time = 0
     LET params.exec_time_frac = 0
     LET params.only_errors = FALSE
     LET params.with_uvars = FALSE
@@ -553,7 +553,7 @@ FUNCTION init_database(filename, force_reload)
          natsql1 VARCHAR(2000),
          natsql2 VARCHAR(2000),
          timestamp DATETIME YEAR TO FRACTION(5),
-         exectime INTERVAL DAY TO FRACTION(5)
+         exectime INTERVAL SECOND(9) TO FRACTION(5)
     )
 
     CATCH
@@ -641,7 +641,7 @@ FUNCTION load_array(d,params)
            params t_params
     DEFINE x INTEGER,
            sql, msg STRING,
-           max_time INTERVAL DAY TO FRACTION(5)
+           max_time INTERVAL SECOND(9) TO FRACTION(5)
 
     CALL log_arr.clear()
     CALL log_att.clear()
@@ -661,8 +661,8 @@ FUNCTION load_array(d,params)
     IF params.cursor_hold IS NOT NULL THEN
        LET sql = sql || SFMT(" AND c_hold = '%1'",params.cursor_hold)
     END IF
-    IF params.exec_time != "00:00:00" OR params.exec_time_frac>0 THEN
-       LET max_time = SFMT(" 0 %1.%2", params.exec_time, (params.exec_time_frac USING "&&&&&"))
+    IF params.exec_time>0 OR params.exec_time_frac>0 THEN
+       LET max_time = SFMT("%1.%2", params.exec_time, (params.exec_time_frac USING "&&&&&"))
        LET sql = sql || SFMT(" AND exectime > '%1'", max_time)
     END IF
     IF params.only_errors THEN
@@ -761,6 +761,7 @@ FUNCTION load_file(filename, force_reload)
            rejected BOOLEAN,
            found BOOLEAN,
            tail STRING,
+           exectime_1 INTERVAL DAY TO FRACTION(5),
            cmd t_command,
            sv t_sqlvar,
            dm t_drvmsg,
@@ -1073,7 +1074,12 @@ FUNCTION load_file(filename, force_reload)
         IF cmd.exectime IS NULL THEN
            CALL extract_tail(" | Execution time  : ", line) RETURNING found, tail
            IF found THEN
-              LET cmd.exectime = tail
+              LET exectime_1 = tail
+              IF exectime_1 IS NOT NULL THEN
+                 LET cmd.exectime = exectime_1
+              ELSE
+                 LET cmd.exectime = tail
+              END IF
               CONTINUE WHILE
            END IF
         END IF

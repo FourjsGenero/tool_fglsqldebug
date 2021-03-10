@@ -38,12 +38,12 @@ GRID
 FGLSQLDEBUG File: [fn                                                                      ]
 
 <TABLE t1                                                                                  >
-[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
-[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
-[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
-[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
-[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
-[c1    |c2       |c3     |c4    |c5           |c6                |c7                       ]
+[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
+[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
+[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
+[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
+[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
+[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
 <                                                                                          >
 <GROUP g1                                                                                  >
 [sql1                                                 ] Timestamp: [ts                     ]
@@ -93,8 +93,8 @@ PHANTOM FORMONLY.sqlstate;
 EDIT c6 = FORMONLY.fglsq, TITLE="SQL", SCROLL;
 PHANTOM FORMONLY.natsql1;
 PHANTOM FORMONLY.natsql2;
-EDIT c7 = FORMONLY.timestamp, TITLE="When";
-EDIT c5 = FORMONLY.exectime, TITLE="Time";
+EDIT c7 = FORMONLY.timestamp, TITLE="Timestamp";
+EDIT c5 = FORMONLY.exectime, TITLE="Duration";
 
 GROUP g1: group1, TEXT="SQL Command";
 EDIT ts = FORMONLY.f_timestamp, COLOR=BLUE;
@@ -136,7 +136,8 @@ EDIT c23 = FORMONLY.val_i, TITLE="Value", SCROLL;
 GROUP g3: group3, TEXT="Filter";
 COMBOBOX cc = FORMONLY.current_cursor;
 COMBOBOX cs = FORMONLY.current_source;
-EDIT et = FORMONLY.exec_time;
+EDIT et = FORMONLY.exec_time,
+  COMMENT="Seconds";
 EDIT etf= FORMONLY.exec_time_frac, FORMAT="&&&&&",
   COMMENT="Fraction of seconds";
 CHECKBOX oe = FORMONLY.only_errors, NOT NULL, TEXT="Only errors";
