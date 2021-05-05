@@ -96,7 +96,7 @@ PHANTOM FORMONLY.natsql2;
 EDIT c7 = FORMONLY.timestamp, TITLE="Timestamp";
 EDIT c5 = FORMONLY.exectime, TITLE="Duration";
 
-GROUP g1: group1, TEXT="SQL Command";
+GROUP g1: group1, STYLE="collapsible", TEXT="SQL Command";
 EDIT ts = FORMONLY.f_timestamp, COLOR=BLUE;
 EDIT f0 = FORMONLY.f_sqlcode, COLOR=RED WHERE f0 < 0;
 EDIT f1 = FORMONLY.f_sqlstate, COLOR=CYAN;
@@ -115,7 +115,7 @@ TEXTEDIT sql3 = FORMONLY.curr_sql3, STRETCH=X,
    COMMENT = "Database Native SQL statement (2)";
 --TABLE t1: table1;
 
-GROUP g2: group2, TEXT="USING & INTO variables";
+GROUP g2: group2, STYLE="collapsible", TEXT="USING & INTO variables";
 
 TABLE t2: table2, UNSORTABLECOLUMNS, UNMOVABLECOLUMNS, UNHIDABLECOLUMNS;
 PHANTOM FORMONLY.cid_u;
@@ -133,7 +133,7 @@ EDIT c22 = FORMONLY.typ_i, TITLE="Type", SCROLL;
 PHANTOM FORMONLY.flg_i;
 EDIT c23 = FORMONLY.val_i, TITLE="Value", SCROLL;
 
-GROUP g3: group3, TEXT="Filter";
+GROUP g3: group3, STYLE="collapsible", TEXT="Filter";
 COMBOBOX cc = FORMONLY.current_cursor;
 COMBOBOX cs = FORMONLY.current_source;
 EDIT et = FORMONLY.exec_time,

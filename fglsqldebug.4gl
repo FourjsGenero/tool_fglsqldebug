@@ -111,6 +111,7 @@ DEFINE fglsourcepath STRING
 
 MAIN
     CALL check_front_end()
+    CALL define_collapsible_group_style()
     OPTIONS INPUT WRAP, FIELD ORDER FORM
     --DEFER INTERRUPT DEFER QUIT
     LET fglsourcepath = fgl_getenv("FGLSOURCEPATH")
@@ -1463,4 +1464,33 @@ FUNCTION log_arr_lookup_cmdid(cmdid)
         END IF
     END FOR
     RETURN 0
+END FUNCTION
+
+FUNCTION style_define(name STRING, attdefs DICTIONARY OF STRING)
+    DEFINE rn, sl, nn, sa om.DomNode
+    DEFINE nl om.NodeList
+    DEFINE names DYNAMIC ARRAY OF STRING
+    DEFINE x INTEGER
+    LET rn = ui.Interface.getRootNode()
+    LET nl = rn.selectByPath("//StyleList")
+    IF nl.getLength() != 1 THEN
+        DISPLAY "ERROR: No StyleList element found???"
+        EXIT PROGRAM 1
+    END IF
+    LET sl = nl.item(1)
+    LET nn = sl.createChild("Style")
+    CALL nn.setAttribute("name", name)
+    LET names = attdefs.getKeys()
+    FOR x=1 TO names.getLength()
+        LET sa = nn.createChild("StyleAttribute")
+        CALL sa.setAttribute("name", names[x])
+        CALL sa.setAttribute("value", attdefs[names[x]])
+    END FOR
+END FUNCTION
+
+FUNCTION define_collapsible_group_style()
+    DEFINE attdefs DICTIONARY OF STRING
+    LET attdefs["collapsible"] = "yes"
+    LET attdefs["backgroundColor"] = "lightBlue"
+    CALL style_define("Group.collapsible", attdefs)
 END FUNCTION
