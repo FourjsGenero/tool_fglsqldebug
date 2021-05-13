@@ -10,7 +10,7 @@ run:: all
 	fglform -M $<
 
 %.42m: %.4gl
-	fglcomp -Wall -M $<
+	fglcomp -Wall -Wno-stdsql -M $<
 
 clean::
 	rm -f *.42?
