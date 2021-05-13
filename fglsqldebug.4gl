@@ -184,7 +184,7 @@ FUNCTION do_monitor(filename, force_reload)
     DISPLAY ARRAY log_arr TO sr.* ATTRIBUTES(DOUBLECLICK=source)
         BEFORE ROW
            CALL sync_row_data(DIALOG,arr_curr())
-           CALL setup_dialog(DIALOG,params.*)
+           CALL setup_dialog(DIALOG)
         ON ACTION source
            CALL show_source(log_arr[arr_curr()].srcfile, log_arr[arr_curr()].srcline)
         ON ACTION details
@@ -267,14 +267,14 @@ FUNCTION do_monitor(filename, force_reload)
               LET params.filename = NULL
               CALL load_array(DIALOG,params.*) -- cleanup
               CALL sync_row_data(DIALOG,0)
-              CALL setup_dialog(DIALOG,params.*)
+              CALL setup_dialog(DIALOG)
               CALL ui.Interface.refresh()
               CALL mbox_ok(SFMT("Could not load FGLSQLDEBUG log from:\n%1", filename))
            ELSE
               LET params.filename = filename
               CALL load_array(DIALOG,params.*)
               CALL sync_row_data(DIALOG,arr_curr())
-              CALL setup_dialog(DIALOG,params.*)
+              CALL setup_dialog(DIALOG)
            END IF
            LET params.current_cursor = NULL
            LET params.current_source = NULL
@@ -308,14 +308,13 @@ FUNCTION reload_rows(d,params)
            params t_params
     CALL load_array(d,params.*)
     CALL sync_row_data(d,1)
-    CALL setup_dialog(d,params.*)
+    CALL setup_dialog(d)
 END FUNCTION
 
 FUNCTION sync_row_data(d,row)
     DEFINE d ui.Dialog,
            row INTEGER
-    DEFINE tmp STRING,
-           f ui.Form
+    DEFINE f ui.Form
     LET f = d.getForm()
     IF row>=1 AND row<=log_arr.getLength() THEN
        DISPLAY log_arr[row].fglsql TO curr_sql1
@@ -342,9 +341,8 @@ FUNCTION sync_row_data(d,row)
     CALL load_sqlvars(d,row)
 END FUNCTION
 
-FUNCTION setup_dialog(d,params)
-    DEFINE d ui.Dialog,
-           params t_params
+FUNCTION setup_dialog(d)
+    DEFINE d ui.Dialog
     DEFINE row INTEGER,
            s, r BOOLEAN
     LET row = d.getCurrentRow("sr")
@@ -419,7 +417,7 @@ FUNCTION show_source(srcfile,srcline)
        CALL mbox_ok(SFMT("Could not open file:\n%1",tmp))
        RETURN
     END TRY
-    WHILE NOT ch.isEOF()
+    WHILE NOT ch.isEof()
        LET x = x+1
        LET arr[x].line = x
        LET arr[x].text = ch.readLine()
@@ -445,12 +443,12 @@ FUNCTION get_temp_dir()
     DEFINE tmpdir STRING
     IF fgl_getenv("WINDIR") THEN
        LET tmpdir = fgl_getenv("TEMP")
-       IF LENGTH(tmpdir) == 0 THEN
+       IF length(tmpdir) == 0 THEN
           LET tmpdir = fgl_getenv("TMP")
        END IF
     ELSE
        LET tmpdir = fgl_getenv("TMPDIR")
-       IF LENGTH(tmpdir) == 0 THEN
+       IF length(tmpdir) == 0 THEN
           LET tmpdir="/tmp"
        END IF
     END IF
@@ -460,9 +458,9 @@ END FUNCTION
 FUNCTION get_user_name()
     DEFINE username STRING
     LET username = fgl_getenv("USERNAME")
-    IF LENGTH(username) == 0 THEN
+    IF length(username) == 0 THEN
        LET username = fgl_getenv("USER")
-       IF LENGTH(username) == 0 THEN
+       IF length(username) == 0 THEN
           LET username="unknown"
        END IF
     END IF
@@ -567,11 +565,11 @@ END FUNCTION
 
 FUNCTION database_available()
     DEFINE c INTEGER
-    IF LENGTH(fgl_db_driver_type())==0 THEN RETURN FALSE END IF
+    IF length(fgl_db_driver_type())==0 THEN RETURN FALSE END IF
     WHENEVER ERROR CONTINUE
     SELECT COUNT(*) INTO c FROM connection
     WHENEVER ERROR STOP
-    RETURN (SQLCA.SQLCODE==0)
+    RETURN (sqlca.sqlcode==0)
 END FUNCTION
 
 FUNCTION fill_cursor_list(cmb)
@@ -612,7 +610,6 @@ END FUNCTION
 
 FUNCTION extract_tail(head,line)
     DEFINE head, line STRING
-    DEFINE len SMALLINT, tail STRING
     IF line.getIndexOf(head, 1) == 1 THEN
        RETURN TRUE, line.subString( head.getLength()+1, line.getLength() )
     END IF
@@ -810,7 +807,7 @@ FUNCTION load_file(filename, force_reload)
     LET last_cmdid = 0
     INITIALIZE cmd.* TO NULL
 
-    WHILE NOT ch.isEOF()
+    WHILE NOT ch.isEof()
 
         IF rejected THEN
            LET rejected = FALSE
@@ -1239,7 +1236,7 @@ FUNCTION cmdarg_option_check(stindex,optlist)
        CALL optarr.appendElement()
        IF i > 0 THEN
           LET optarr[optarr.getLength()].hasparam = 1
-          LET optspec = optspec.substring(1,i-1)
+          LET optspec = optspec.subString(1,i-1)
        END IF
        LET optarr[optarr.getLength()].optname = optspec
     END WHILE
@@ -1248,7 +1245,7 @@ FUNCTION cmdarg_option_check(stindex,optlist)
         IF NOT cmdarg_option_isopt(optspec) THEN
            IF indiv THEN CONTINUE FOR ELSE RETURN i END IF
         END IF
-        LET optspec = optspec.substring(2,optspec.getLength())
+        LET optspec = optspec.subString(2,optspec.getLength())
         LET found = FALSE
         FOR j=1 TO optarr.getLength()
             IF optarr[j].optname == optspec THEN
@@ -1396,7 +1393,7 @@ FUNCTION collect_global_stats()
          WHERE fglcmd    == l_fglcmd
            AND fglsql    == l_fglsql
            AND fglcursor == l_fglcursor
-        IF SQLCA.SQLCODE==100 THEN
+        IF sqlca.sqlcode==100 THEN
            CALL collect_statement_stats(x) RETURNING stat.*
            INSERT INTO stmt_stats
               VALUES ( log_arr[x].cmdid, l_fglcmd, l_fglsql, l_fglcursor, stat.* )

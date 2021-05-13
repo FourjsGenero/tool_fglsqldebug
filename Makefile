@@ -10,7 +10,7 @@ run:: all
 	fglform -M $<
 
 %.42m: %.4gl
-	fglcomp -M $<
+	fglcomp -Wall -M $<
 
 clean::
 	rm -f *.42?
