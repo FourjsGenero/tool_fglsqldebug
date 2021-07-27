@@ -480,13 +480,19 @@ FUNCTION init_database(filename, force_reload)
     DEFINE filename STRING,
            force_reload BOOLEAN
     DEFINE tmpfile STRING, db STRING,
-           username STRING, basename STRING,
+           username, basename STRING, extension STRING,
+           mtimesec INTEGER, filesize BIGINT,
            reuse BOOLEAN
 
     LET username = get_user_name()
     LET basename = os.Path.baseName(filename)
+    LET extension = os.Path.extension(basename)
+    LET basename = basename.substring(1,basename.getIndexOf(extension,1)-2)
+    LET filesize = os.Path.size(filename)
+    LET mtimesec = util.Datetime.toSecondsSinceEpoch(os.Path.mtime(filename))
 
-    LET tmpfile = os.Path.join(get_temp_dir(),SFMT("fglsqldebug_%1_%2.tmp",username,basename))
+    LET tmpfile = os.Path.join( get_temp_dir(),
+        SFMT("fglsqldebug_%1_%2_%3_%4_%5.tmp",username,basename,extension,filesize,mtimesec))
 
     IF os.Path.exists(tmpfile) AND NOT force_reload THEN
        LET reuse = TRUE
