@@ -1,7 +1,7 @@
 IMPORT os
 IMPORT util
 
-CONSTANT TOOL_VERSION = "1.06"
+CONSTANT TOOL_VERSION = "1.07"
 CONSTANT TOOL_ABOUT_MSG = "\nFGLSQLDEBUG Viewer Version %1\n\nFour Js Development Tools 2016\n\n"
 
 TYPE t_connection RECORD
@@ -846,9 +846,9 @@ FUNCTION load_file(filename, force_reload)
 
         IF sv.vartype IS NULL THEN
            CALL extract_tail(" | using: ", line) RETURNING found, tail
-           --IF NOT found THEN
-           --   CALL extract_tail(" | using(tmp): ", line) RETURNING found, tail
-           --END IF
+           IF NOT found THEN
+              CALL extract_tail(" | using(tmp): ", line) RETURNING found, tail
+           END IF
            IF found THEN
               LET sv.vartype = "U"
                  LET sv.position = 0
