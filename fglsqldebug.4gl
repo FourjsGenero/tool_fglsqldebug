@@ -487,7 +487,7 @@ FUNCTION init_database(filename, force_reload)
     LET username = get_user_name()
     LET basename = os.Path.baseName(filename)
     LET extension = os.Path.extension(basename)
-    LET basename = basename.substring(1,basename.getIndexOf(extension,1)-2)
+    LET basename = basename.subString(1,basename.getIndexOf(extension,1)-2)
     LET filesize = os.Path.size(filename)
     LET mtimesec = util.Datetime.toSecondsSinceEpoch(os.Path.mtime(filename))
 
