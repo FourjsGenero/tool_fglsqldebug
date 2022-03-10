@@ -3,6 +3,9 @@ ACTION DEFAULTS
   ACTION source     (CONTEXTMENU=NO, TEXT="Source")
   ACTION details    (CONTEXTMENU=NO, TEXT="Details")
   ACTION refresh    (CONTEXTMENU=NO, TEXT="Refresh", ACCELERATOR=CONTROL-R)
+  ACTION f_errors   (CONTEXTMENU=NO, TEXT="Errors")
+  ACTION f_cursor   (CONTEXTMENU=NO, TEXT="Cursor")
+  ACTION f_source   (CONTEXTMENU=NO, TEXT="Source")
   ACTION prev_ident (CONTEXTMENU=NO, TEXT="Same prev", ACCELERATOR=CONTROL-P)
   ACTION next_ident (CONTEXTMENU=NO, TEXT="Same next", ACCELERATOR=CONTROL-N)
   ACTION stats_glob (CONTEXTMENU=NO, TEXT="Global Statistics", ACCELERATOR=CONTROL-W)
@@ -16,10 +19,15 @@ GROUP file (TEXT="File")
   COMMAND open
   COMMAND close
 END
-GROUP file (TEXT="View")
+GROUP view (TEXT="View")
   COMMAND details
   COMMAND source
   COMMAND refresh
+END
+GROUP filter (TEXT="Filter")
+  COMMAND f_errors
+  COMMAND f_cursor
+  COMMAND f_source
 END
 GROUP stats (TEXT="Profiling")
   COMMAND prev_ident

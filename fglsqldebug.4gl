@@ -185,10 +185,21 @@ FUNCTION do_monitor(filename, force_reload)
         BEFORE ROW
            CALL sync_row_data(DIALOG,arr_curr())
            CALL setup_dialog(DIALOG)
-        ON ACTION source
+        ON ACTION source ATTRIBUTES(ROWBOUND, TEXT="Show source")
            CALL show_source(log_arr[arr_curr()].srcfile, log_arr[arr_curr()].srcline)
-        ON ACTION details
+        ON ACTION details ATTRIBUTES(ROWBOUND, TEXT="Show details")
             CALL show_driver_messages(log_arr[arr_curr()].cmdid)
+        ON ACTION f_errors
+           LET params.only_errors = NOT params.only_errors
+           CALL reload_rows(DIALOG,params.*)
+        ON ACTION f_cursor ATTRIBUTES(ROWBOUND, TEXT="Filter cursor")
+           LET params.current_cursor = IIF(params.current_cursor IS NULL,
+                                           log_arr[arr_curr()].fglcursor, NULL)
+           CALL reload_rows(DIALOG,params.*)
+        ON ACTION f_source ATTRIBUTES(ROWBOUND, TEXT="Filter source")
+           LET params.current_source = IIF(params.current_source IS NULL,
+                                           log_arr[arr_curr()].srcfile, NULL)
+           CALL reload_rows(DIALOG,params.*)
     END DISPLAY
 
     DISPLAY ARRAY uvars TO sruv.*
@@ -344,14 +355,17 @@ END FUNCTION
 FUNCTION setup_dialog(d)
     DEFINE d ui.Dialog
     DEFINE row INTEGER,
-           s, r BOOLEAN
+           s, c, r BOOLEAN
     LET row = d.getCurrentRow("sr")
     IF row>0 THEN
        LET s = (log_arr[row].srcfile IS NOT NULL)
+       LET c = (log_arr[row].fglcursor != "?") -- FALSE if NULL
        LET r = TRUE
     END IF
     CALL d.setActionActive("sr.source",s)
     CALL d.setActionActive("sr.details",r)
+    CALL d.setActionActive("sr.f_source",s)
+    CALL d.setActionActive("sr.f_cursor",c)
 END FUNCTION
 
 FUNCTION show_driver_messages(cid)
