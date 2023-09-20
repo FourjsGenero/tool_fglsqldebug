@@ -568,9 +568,9 @@ FUNCTION init_database(filename, force_reload)
          sqlerrm VARCHAR(71),
          sqlerrmsg VARCHAR(200),
          sqlstate VARCHAR(10),
-         fglsql VARCHAR(2000),
-         natsql1 VARCHAR(2000),
-         natsql2 VARCHAR(2000),
+         fglsql LVARCHAR(2000),
+         natsql1 LVARCHAR(2000),
+         natsql2 LVARCHAR(2000),
          timestamp DATETIME YEAR TO FRACTION(5),
          exectime INTERVAL SECOND(9) TO FRACTION(5)
     )
@@ -1389,7 +1389,7 @@ FUNCTION collect_global_stats()
     CREATE TEMP TABLE stmt_stats (
               firstcmdid INTEGER PRIMARY KEY,
               fglcmd VARCHAR(30),
-              fglsql VARCHAR(2000),
+              fglsql LVARCHAR(2000),
               fglcursor VARCHAR(50),
               occurences INTEGER,
               sqlerrors INTEGER,
@@ -1397,8 +1397,8 @@ FUNCTION collect_global_stats()
               time_avg INTERVAL HOUR(9) TO FRACTION(5),
               time_min INTERVAL HOUR(9) TO FRACTION(5),
               time_max INTERVAL HOUR(9) TO FRACTION(5),
-              time_tot INTERVAL HOUR(9) TO FRACTION(5),
-              UNIQUE (fglcmd, fglsql, fglcursor)
+              time_tot INTERVAL HOUR(9) TO FRACTION(5)
+              --, UNIQUE (fglcmd, fglsql, fglcursor)
            )
 
     FOR x=1 TO log_arr.getLength()
