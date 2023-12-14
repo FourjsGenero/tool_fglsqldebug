@@ -2,8 +2,9 @@
 
 ## Description
 
-This tool can read an FGLSQLDEBUG output, to show the log records in a graphical interface.
-You can then sort, search and filter log records, to find what you are looking for.
+This Genero tool can read an FGLSQLDEBUG output, to show the log records in a
+graphical interface. You can then sort, search and filter log records, to find
+SQL statements to be optimized or fixed.
 
 ![FGLSQLDEBUG viewer (GDC)](https://github.com/FourjsGenero/tool_fglsqldebug/raw/master/docs/fglsqldebug-screen-001.png)
 
