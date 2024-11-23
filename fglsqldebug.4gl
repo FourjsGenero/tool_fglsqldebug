@@ -896,6 +896,10 @@ FUNCTION load_file(filename, force_reload)
 
         CALL extract_tail("SQL: ", line) RETURNING found, tail
         IF found THEN
+           WHILE tail.getLength()==0 -- SQL probably starts at next line?
+              IF ch.isEof() THEN EXIT WHILE END IF
+              LET tail = ch.readLine()
+           END WHILE
            IF cmd.cmdid IS NOT NULL THEN
               IF cmd.fglsql IS NULL THEN
                  LET cmd.fglsql = def_fglsql
