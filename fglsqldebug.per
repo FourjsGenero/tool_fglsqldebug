@@ -46,12 +46,12 @@ GRID
 FGLSQLDEBUG File: [fn                                                                      ]
 
 <TABLE t1                                                                                  >
-[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
-[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
-[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
-[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
-[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
-[c1    |c2       |c3     |c4    |c5        |c6                   |c7                       ]
+[c1    |c2       |c3     |c31 |c4    |c5        |c6                   |c7                  ]
+[c1    |c2       |c3     |c31 |c4    |c5        |c6                   |c7                  ]
+[c1    |c2       |c3     |c31 |c4    |c5        |c6                   |c7                  ]
+[c1    |c2       |c3     |c31 |c4    |c5        |c6                   |c7                  ]
+[c1    |c2       |c3     |c31 |c4    |c5        |c6                   |c7                  ]
+[c1    |c2       |c3     |c31 |c4    |c5        |c6                   |c7                  ]
 <                                                                                          >
 <GROUP g1                                                                                  >
 [sql1                                                 ] Timestamp: [ts                     ]
@@ -89,7 +89,7 @@ EDIT c2 = FORMONLY.fglcmd, TITLE="Command", SCROLL;
 PHANTOM FORMONLY.srcfile;
 PHANTOM FORMONLY.srcline;
 EDIT c3 = FORMONLY.fglcursor, TITLE="Cursor", SCROLL;
-PHANTOM FORMONLY.sqlcursor;
+EDIT c31 = FORMONLY.sqlcursor, TITLE="Intern", SCROLL;
 PHANTOM FORMONLY.c_scroll;
 PHANTOM FORMONLY.c_hold;
 EDIT c4 = FORMONLY.sqlcode, TITLE="sqlcode";

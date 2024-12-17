@@ -2,11 +2,11 @@ LAYOUT (TEXT="SQL Statement statistics")
 GRID
 {
 <TABLE t1                                                                                                                             >
-[c1     |c2             |c3               |c4    |c5   |c6   |c7   |c8             |c9             |c10             |c11              ]
-[c1     |c2             |c3               |c4    |c5   |c6   |c7   |c8             |c9             |c10             |c11              ]
-[c1     |c2             |c3               |c4    |c5   |c6   |c7   |c8             |c9             |c10             |c11              ]
-[c1     |c2             |c3               |c4    |c5   |c6   |c7   |c8             |c9             |c10             |c11              ]
-[c1     |c2             |c3               |c4    |c5   |c6   |c7   |c8             |c9             |c10             |c11              ]
+[c1     |c2             |c3           |c4     |c41 |c5   |c6   |c7   |c8             |c9             |c10             |c11            ]
+[c1     |c2             |c3           |c4     |c41 |c5   |c6   |c7   |c8             |c9             |c10             |c11            ]
+[c1     |c2             |c3           |c4     |c41 |c5   |c6   |c7   |c8             |c9             |c10             |c11            ]
+[c1     |c2             |c3           |c4     |c41 |c5   |c6   |c7   |c8             |c9             |c10             |c11            ]
+[c1     |c2             |c3           |c4     |c41 |c5   |c6   |c7   |c8             |c9             |c10             |c11            ]
 }
 END
 END
@@ -17,6 +17,7 @@ EDIT c1 = FORMONLY.firstcmdid, TITLE="Num";
 EDIT c2 = FORMONLY.fglcmd, TITLE="Command",SCROLL;
 EDIT c3 = FORMONLY.fglsql, TITLE="SQL",SCROLL;
 EDIT c4 = FORMONLY.fglcursor, TITLE="Cursor",SCROLL;
+EDIT c41 = FORMONLY.sqlcursor, TITLE="Intern",SCROLL;
 EDIT c5 = FORMONLY.occurences, TITLE="Occurrences";
 EDIT c6 = FORMONLY.sqlerrors, TITLE="SQL Errors";
 EDIT c7 = FORMONLY.sqlnotfnd, TITLE="Not Founds";
