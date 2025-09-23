@@ -1194,12 +1194,12 @@ FUNCTION show_usage()
     DISPLAY "Usage: fglsqldebug <options> ..."
     DISPLAY "Options:"
     DISPLAY " -f filename : FGLSQLDEBUG log file"
-    DISPLAY " -r : Force reload of log file"
+    DISPLAY " -r (with -f): Force reload of log file"
 END FUNCTION
 
 FUNCTION mbox_ok(msg)
     DEFINE msg STRING
-    MENU "ENAudit" ATTRIBUTES(STYLE="dialog",COMMENT=msg)
+    MENU "FGLSQLDEBUG" ATTRIBUTES(STYLE="dialog",COMMENT=msg)
         COMMAND "Ok" EXIT MENU
     END MENU
 END FUNCTION
@@ -1207,7 +1207,7 @@ END FUNCTION
 FUNCTION mbox_yn(msg)
     DEFINE msg STRING
     DEFINE r BOOLEAN
-    MENU "ENAudit" ATTRIBUTES(STYLE="dialog",COMMENT=msg)
+    MENU "FGLSQLDEBUG" ATTRIBUTES(STYLE="dialog",COMMENT=msg)
         COMMAND "Yes" LET r = TRUE
         COMMAND "No"  LET r = FALSE
     END MENU
