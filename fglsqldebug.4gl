@@ -1046,6 +1046,8 @@ FUNCTION load_file(filename, force_reload)
         IF cmd.sqlcursor IS NULL THEN
            CALL extract_tail(" | sql cursor      : ", line) RETURNING found, tail
            IF found THEN
+              LET cmd.c_scroll = "N"
+              LET cmd.c_hold = "N"
               LET p = tail.getIndexOf("ident='",1)
               LET tmp1 = tail.subString(p+7,tail.getLength()-1)
               LET p = tmp1.getIndexOf("'",1)
@@ -1064,16 +1066,14 @@ FUNCTION load_file(filename, force_reload)
                  CONTINUE WHILE
               END IF
               --
-{ TODO
               LET line = ch.readLine()
               CALL extract_tail(" |   sql stmt      : ", line) RETURNING found, tail
               IF found THEN
-                 LET cmd.drvsql = tail
+                 -- TODO: LET cmd.drvsql = tail
               ELSE
                  LET rejected = TRUE
                  CONTINUE WHILE
               END IF
-}
               --
               LET line = ch.readLine()
               CALL extract_tail(" |   scroll cursor :", line) RETURNING found, tail
@@ -1084,6 +1084,7 @@ FUNCTION load_file(filename, force_reload)
                  CONTINUE WHILE
               END IF
               --
+              LET line = ch.readLine()
               CALL extract_tail(" |   with hold     :", line) RETURNING found, tail
               IF found THEN
                  LET cmd.c_hold = IIF(tail=="0","N","Y")
